@@ -14,8 +14,8 @@ Upload:
 '''
 def sendFile(file_name, socket):
     videoData = cv2.VideoCapture('DATA/'+file_name)         #Capture Video
-    fps = videoData.get(cv2.CAP_PROP_FPS)                   #GET FPS
-    fourCC = int(videoData.get(cv2.CAP_PROP_FOURCC))        #GET FOURCC
+    fps = videoData.get(cv2.CAP_PROP_FPS)                   #GET FPS (Frame per second)
+    fourCC = int(videoData.get(cv2.CAP_PROP_FOURCC))        #GET FOURCC (Enconding for some attributes)
     width = int(videoData.get(cv2.CAP_PROP_FRAME_WIDTH))    #GET WIDTH
     height = int(videoData.get(cv2.CAP_PROP_FRAME_HEIGHT))  #GET HEIGHT
     count = int(videoData.get(cv2.CAP_PROP_FRAME_COUNT))    #GET FRAMES COUNT
