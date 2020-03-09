@@ -59,19 +59,13 @@ def master_client(port1):
 	client.bind("tcp://%s:%i"%(ip1,port1))      #client will connect to this port
 
 	while True:
-		new_list =[]
-		print(ports_list)
-		for i in range(3):
-			new_list.append(ports_list[i])
 		data = client.recv_pyobj()              #Receive message from client 
-		print(data)
+		
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
 		print("master_client_id %i received command type %s" %(my_id, data['command']))
-		#print(starting_dk_port_index)
-		print(ports_list,new_list)
+		
 		if(data['command']=="upload"):
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
-				print("done")
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
 			client.send_pyobj(ports_list[starting_dk_port_index])
 			available_table[ports_list[starting_dk_port_index]] = "busy"
@@ -94,9 +88,12 @@ if __name__ == "__main__":
 		my_id = random.randrange(10000)
 
 		keepers_num, processes_num = configure()
-		#printAvailable(my_id)
+		
+		p = []
+		for i in range(0,n):
+			p.append(multiprocessing.Process(target=master_client, args=(port,)))
+			p[i].start()
+			port = port + 1
 
 		for i in range(0,n):
-			p1=	multiprocessing.Process(target=master_client, args=(port,))
-			p1.start()
-			port = port + 1
+			p[i].join()
