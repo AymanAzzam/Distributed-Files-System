@@ -2,6 +2,7 @@ import multiprocessing
 import sys
 import zmq
 import random
+import threading
 
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
 keepers_num = 0;	processes_num = 0
@@ -9,6 +10,8 @@ keepers_num = 0;	processes_num = 0
 lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
+
+my_mutex = threading.Lock()
 
 class value:
 	def __init__(self, user_id, datakeepers_list, paths_list):
@@ -64,6 +67,9 @@ def master_client(port1):
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
 		print("master_client_id %i received command type %s" %(my_id, data['command']))
 		
+		global my_mutex
+		my_mutex.acquire()
+
 		if(data['command']=="upload"):
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
@@ -82,6 +88,8 @@ def master_client(port1):
 
 		else:
 			print("master_client_id %i received invalid command" %(my_id))
+
+		my_mutex.release()
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
