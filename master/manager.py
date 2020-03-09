@@ -10,15 +10,27 @@ lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
 
+class value:
+	def __init__(self, user_id, datakeepers_list, paths_list):
+		self.user_id= user_id
+		self.datakeepers_list= datakeepers_list
+		self.paths_list= paths_list
+
+	def valPrint(self):
+		print(self.user_id, self.datakeepers_list, self.paths_list)
+
+
+
 def updateLookup(proc_num,filename, value):
 	print("i am process numberrr : %i"  %proc_num)
 	lookup_table[filename]=value
 
 
-def printLookup(proc_num):
-	print("i am process number : %i inside print Lookup"  %proc_num)
+def printLookup(proc_num,lookup_table):
+	print("i am process number : %i inside print"  %proc_num)
 	for k, v in lookup_table.items():
-		print(k, v)
+		print(k)
+		lookup_table[k].valPrint()
 
 def printAvailable(proc_num):
 	print("i am process number : %i inside print Available"  %proc_num)
@@ -38,6 +50,7 @@ def configure():
 
 def master_client(port1):
 	my_id = random.randrange(10000)
+	starting_dk_port_index = random.randrange(number_of_processes*number_of_datakeepers)
     
 	context = zmq.Context()
     
@@ -50,9 +63,19 @@ def master_client(port1):
 		print("master_client_id %i received command type %s" %(my_id, data['command']))
 		
 		if(data[command]=="upload"):
-			print("5")
+			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
+				starting_dk_port_index=(starting_dk_port_index+1)%(number_of_processes*number_of_datakeepers)
+			client.send_pyobj(ports_list[starting_dk_port_index])	
+
+
 		elif(data[command]=="download"):
-			print("6")
+			val = lookup_table[data[filename]]
+			datakeeper_list= val.datakeepers_list
+			i=0
+			while(availible_table[datakeeper_list[i]]== "busy"):
+				i= (i+1)%(len(datakeeper_list))
+			client.send_pyobj(datakeeper_list[i])	
+
 		else:
 			print("master_client_id %i received invalid command" %(my_id))
 
