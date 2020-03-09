@@ -47,28 +47,33 @@ def configure():
 		for j in range(0,processes_num):
 			available_table[ip+"/"+str(ip_port+j)] = "available"
 			ports_list.append(ip+"/"+str(ip_port+j))
+	return keepers_num, processes_num
 
 def master_client(port1):
 	my_id = random.randrange(10000)
-	starting_dk_port_index = random.randrange(number_of_processes*number_of_datakeepers)
-    
+	starting_dk_port_index = random.randrange(keepers_num*processes_num)
+
 	context = zmq.Context()
     
 	client = context.socket(zmq.REP)            #REP because it needs to receive then send
 	client.bind("tcp://%s:%i"%(ip1,port1))      #client will connect to this port
 
 	while True:
+		print(ports_list)
 		data = client.recv_pyobj()              #Receive message from client 
+		print(data)
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
 		print("master_client_id %i received command type %s" %(my_id, data['command']))
-		
-		if(data[command]=="upload"):
+		#print(starting_dk_port_index)
+		print(ports_list)
+		if(data['command']=="upload"):
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
-				starting_dk_port_index=(starting_dk_port_index+1)%(number_of_processes*number_of_datakeepers)
+				print("done")
+				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
 			client.send_pyobj(ports_list[starting_dk_port_index])	
 
 
-		elif(data[command]=="download"):
+		elif(data['command']=="download"):
 			val = lookup_table[data[filename]]
 			datakeeper_list= val.datakeepers_list
 			i=0
@@ -83,9 +88,9 @@ if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
 		my_id = random.randrange(10000)
 
-		configure()
+		keepers_num, processes_num = configure()
 		#printAvailable(my_id)
-		
+
 		for i in range(0,n):
 			p1=	multiprocessing.Process(target=master_client, args=(port,))
 			p1.start()

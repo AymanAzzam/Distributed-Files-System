@@ -20,7 +20,7 @@ def main():
     
     #while True:                                        #commented for now but will need it later
     data = {}
-    data['command'] = "upload"; data["file"] = "video.mp4"
+    data['command'] = "upload"; data["filename"] = "video.mp4"
     for i in range(6):
         master.send_pyobj(data)                         #Send data to the master
         print(master.recv_pyobj())                      #receive data from the master
