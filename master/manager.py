@@ -4,6 +4,8 @@ import zmq
 import random
 
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
+keepers_num = 0;	processes_num = 0
+
 lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
