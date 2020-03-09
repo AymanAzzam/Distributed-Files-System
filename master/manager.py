@@ -6,6 +6,7 @@ import random
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
 lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
+ports_list = multiprocessing.Manager().list()
 
 def updateLookup(proc_num,filename, value):
 	print("i am process numberrr : %i"  %proc_num)
@@ -30,7 +31,8 @@ def configure():
 		ip = f.readline().rstrip()			#.rstrip to erase "\n" from the ip end
 		ip_port = int(f.readline())
 		for j in range(0,processes_num):
-			available_table[ip+"/"+str(ip_port+j)] = True
+			available_table[ip+"/"+str(ip_port+j)] = "available"
+			ports_list.append(ip+"/"+str(ip_port+j))
 
 def master_client(port1):
 	my_id = random.randrange(10000)
