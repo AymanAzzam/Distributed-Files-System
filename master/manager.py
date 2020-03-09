@@ -7,15 +7,20 @@ ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
 lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
 
-def updateLookup(proc_num,lookup_table, filename, value):
+def updateLookup(proc_num,filename, value):
 	print("i am process numberrr : %i"  %proc_num)
 	lookup_table[filename]=value
 
 
-def printLookup(proc_num,lookup_table):
-	print("i am process number : %i inside print"  %proc_num)
+def printLookup(proc_num):
+	print("i am process number : %i inside print Lookup"  %proc_num)
 	for k, v in lookup_table.items():
 		print(k, v)
+
+def printAvailable(proc_num):
+	print("i am process number : %i inside print Available"  %proc_num)
+	for k, v in available_table.items():
+		print(k, v)	
 
 def configure():
 	f = open("config.txt", "r")
@@ -49,8 +54,11 @@ def master_client(port1):
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
-		configure()
+		my_id = random.randrange(10000)
 
+		configure()
+		#printAvailable(my_id)
+		
 		for i in range(0,n):
 			p1=	multiprocessing.Process(target=master_client, args=(port,))
 			p1.start()
