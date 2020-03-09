@@ -59,27 +59,32 @@ def master_client(port1):
 	client.bind("tcp://%s:%i"%(ip1,port1))      #client will connect to this port
 
 	while True:
+		new_list =[]
 		print(ports_list)
+		for i in range(3):
+			new_list.append(ports_list[i])
 		data = client.recv_pyobj()              #Receive message from client 
 		print(data)
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
 		print("master_client_id %i received command type %s" %(my_id, data['command']))
 		#print(starting_dk_port_index)
-		print(ports_list)
+		print(ports_list,new_list)
 		if(data['command']=="upload"):
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
 				print("done")
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
-			client.send_pyobj(ports_list[starting_dk_port_index])	
+			client.send_pyobj(ports_list[starting_dk_port_index])
+			available_table[ports_list[starting_dk_port_index]] = "busy"
 
 
 		elif(data['command']=="download"):
 			val = lookup_table[data[filename]]
 			datakeeper_list= val.datakeepers_list
 			i=0
-			while(availible_table[datakeeper_list[i]]== "busy"):
+			while(availible_table[datakeeper_list[i]] == "busy"):
 				i= (i+1)%(len(datakeeper_list))
 			client.send_pyobj(datakeeper_list[i])	
+			availible_table[datakeeper_list[i]] = "busy"
 
 		else:
 			print("master_client_id %i received invalid command" %(my_id))
