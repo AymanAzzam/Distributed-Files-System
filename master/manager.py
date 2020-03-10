@@ -3,9 +3,11 @@ from multiprocessing import Lock
 import sys
 import zmq
 import random
+import time
 
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
 keepers_num = 0;	processes_num = 0
+replica_factor = 3
 
 lookup_table = multiprocessing.Manager().dict()
 available_table = multiprocessing.Manager().dict()
@@ -50,6 +52,27 @@ def configure():
 			ports_list.append(ip+"/"+str(ip_port+j))
 	return keepers_num, processes_num
 
+def replica():
+
+	for k, v in lookup_table.items():
+		i =0;	j=0
+		while(len(v.datakeeper_list)< replica_factor):
+			while(i<len(ports_list)):
+				flag = True;	j=0
+				while(j<len(v.datakeeper_list)):
+					if(v.datakeeper_list[j].split("/")[0] == ports_list[i].split("/")[0]):
+						flag = False
+						break
+					j = j + 1
+				if(!flag):
+					break;
+				i = i + processes_num
+
+
+		
+
+	time.sleep(1)
+
 def master_client(port1):
 	my_id = random.randrange(10000)
 	starting_dk_port_index = random.randrange(keepers_num*processes_num)
@@ -63,19 +86,19 @@ def master_client(port1):
 		data = client.recv_pyobj()              #Receive message from client 
 		
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
-		print("master_client_id %i received command type %s" %(my_id, data['command']))
+		print("master_client_id %i received command type %s" %(my_id, data['process']))
 		
 
-		if(data['command']=="upload"):
+		if(data['process']=="upload"):
 			my_mutex.acquire()
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
 			available_table[ports_list[starting_dk_port_index]] = "busy"
 			my_mutex.release()
-			client.send_pyobj(ports_list[starting_dk_port_index])
+			client.send_string(ports_list[starting_dk_port_index])
 
 
-		elif(data['command']=="download"):
+		elif(data['process']=="download"):
 			val = lookup_table[data[filename]]
 			datakeeper_list= val.datakeepers_list
 			i=0
@@ -84,7 +107,7 @@ def master_client(port1):
 				i= (i+1)%(len(datakeeper_list))
 			availible_table[datakeeper_list[i]] = "busy"
 			my_mutex.release()
-			client.send_pyobj(datakeeper_list[i])	
+			client.send_string(datakeeper_list[i])	
 			
 
 		else:
