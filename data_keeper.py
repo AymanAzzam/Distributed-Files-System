@@ -1,63 +1,17 @@
 import zmq
-import cv2
 import sys
 import os
+from utilities import *
 
 
 '''
-Download:
+download:
     *Request: FILE_NAME
     *Response: FILE_NAME, FPS, FOURCC, WIDTH, HEIGHT, COUNT, #0, #1, ..., #[COUNT-1]
 
-Upload:
+upload:
     *Request: FILE_NAME, FPS, FOURCC, WIDTH, HEIGHT, COUNT, #0, #1, ..., #[COUNT-1]
 '''
-def sendFile(file_name, socket):
-    videoData = cv2.VideoCapture('DATA/'+file_name)         #Capture Video
-    fps = videoData.get(cv2.CAP_PROP_FPS)                   #GET FPS (Frame per second)
-    fourCC = int(videoData.get(cv2.CAP_PROP_FOURCC))        #GET FOURCC (Enconding for some attributes)
-    width = int(videoData.get(cv2.CAP_PROP_FRAME_WIDTH))    #GET WIDTH
-    height = int(videoData.get(cv2.CAP_PROP_FRAME_HEIGHT))  #GET HEIGHT
-    count = int(videoData.get(cv2.CAP_PROP_FRAME_COUNT))    #GET FRAMES COUNT
-
-    message = {
-        'FILE_NAME' : file_name,
-        'FPS' : fps,
-        'FOURCC' : fourCC,
-        'WIDTH' : width,
-        'HEIGHT' : height,
-        'COUNT' : count
-    }
-
-
-    for i in range(count):
-        msg.update({("#"+str(i)) : videoData.read()[1]})
-
-    videoData.release()
-
-    socket.send_pyobj(message)
-
-
-
-
-
-def saveFile(video_data):
-    file_name = video_data['FILE_NAME']
-    fps = video_data['FPS']
-    fourCC = video_data['FOURCC']
-    width = video_data['WIDTH']
-    height = video_data['HEIGHT']
-    count = video_data['COUNT']
-
-    out_video = cv2.VideoWriter('DATA/'+file_name, fourCC, fps,(width,height))
-
-    for i in range(count):
-        out_video.write(data[("#"+str(i))])
-        out_video.release()
-
-
-
-
 
 def processStream(message, socket):
     if ("PROCESS_TYPE") not in message:
@@ -65,20 +19,22 @@ def processStream(message, socket):
     
     process = message['PROCESS_TYPE']
 
-    if process == "Download":
+    if process == "download":
     
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
 
-        sendFile(message['FILE_NAME'],socket)
+        message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
+        sent_message = sendFile(message['FILE_NAME'])
         
+        socket.send_pyobj(sent_message)
         '''
         #TODO
         Here notify the master with the successful download
         '''
 
 
-    elif process == "Upload":
+    elif process == "upload":
         
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
@@ -99,7 +55,8 @@ def processStream(message, socket):
         for index in range(count):
             if ("#"+str(index)) not in message:
                 raise NameError("frame #"+str(index)+" is missed!")
-            
+        
+        message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
         saveFile(message)
 
         '''
@@ -133,7 +90,9 @@ def processReplicate(message, socket, context):
         temp_socket = context.socket(zmq.PAIR)
         temp_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
-        sendFile(message['FILE_NAME'],temp_socket)
+        sent_message = sendFile(message['FILE_NAME'])
+
+        temp_socket.send_pyobj(sent_message)
         temp_socket.close()
         
         '''
@@ -145,7 +104,7 @@ def processReplicate(message, socket, context):
     elif message['NODE_TYPE'] == "Destination":
 
         received_file = socket.recv_pyobj()
-        saveFile(received_file['FILE_NAME'],received_file['FILE_CONTENT'])
+        saveFile(received_file)
 
         '''
         #TODO
@@ -157,10 +116,14 @@ def processReplicate(message, socket, context):
 
 
 
+dir_path='DATA'
+os.mkdir(dir_path)
 
-os.mkdir('DATA')
 
-stream_port = 5556
+#ATRRIB: IP STREAM_PORT PUBLISHER_REPORT NOTIFICATION_PORT
+my_ip=sys.argv[1]
+
+stream_port = sys.argv[2]
 #publisher_port here
 
 context = zmq.Context()
@@ -175,7 +138,7 @@ stream.bind("tcp://127.0.0.1:" + str(stream_port))
 while True:
     try:
         message = stream.recv_pyobj(zmq.DOWNTWAIT)
-        processStreammessage,stream)
+        processStream(message,stream)
     except zmq.Again:
         pass
 
