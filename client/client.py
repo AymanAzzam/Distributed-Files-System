@@ -4,7 +4,7 @@ import random
 
 ip1 = "127.0.0.1";      port1 = int(sys.argv[1])
 n = int(sys.argv[2]);   
-#index = int(sys.argv[3])
+index = int(sys.argv[3])
 #file_path = sys.argv[3]
 
 def main():
@@ -19,7 +19,8 @@ def main():
         index = (index + 1) % n
     
     #while True:                                        #commented for now but will need it later
-    data['PROCESS'] = "upload"
+    data = {}
+    data['PROCESS'] = "upload";	data['FILE_NAME'] = "video.mp4"
     for i in range(6):
         master.send_pyobj(data)                         #Send data to the master
         print(master.recv_string())                      #receive data from the master

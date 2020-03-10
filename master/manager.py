@@ -48,29 +48,71 @@ def configure():
 		ip = f.readline().rstrip()			#.rstrip to erase "\n" from the ip end
 		ip_port = int(f.readline())
 		for j in range(0,processes_num):
-			available_table[ip+"/"+str(ip_port+j)] = "available"
-			ports_list.append(ip+"/"+str(ip_port+j))
+			available_table[ip+":"+str(ip_port+j)] = "available"
+			ports_list.append(ip+":"+str(ip_port+j))
 	return keepers_num, processes_num
 
+from multiprocessing import Lock
+import zmq
+
+def keeper_for_replica(v):
+	index = 0;	i = 0
+	while True:
+		i = 0;	flag = True
+		while(i<len(v.datakeepers_list) and flag):
+			if(v.datakeeper_list[i].split(":")[0] == ports_list[index].split(":")[0]):
+				flag = False
+			i = i + 1
+		if(flag):
+			break
+		index = index + processes_num
+	return index
+
+def start_index_for_ip(ip):
+	index = 0
+	while(ip != ports_list[index].split(":")[0]):
+		index = index + 1
+	return index
+
+def src_dst_port(v):
+	dst_index_start = keeper_for_replica(v);	dst_index = dst_index_start
+	my_mutex.acquire()
+	while(available_table[ports_list[dst_index]] == 'busy'):	#Get available destination port for source to connect on it
+		dst_index = (dst_index + 1) % (dst_index_start + processes_num)
+	available_table[ports_list[dst_index]] = 'busy'
+	
+	src_index_start = start_index_for_ip(v.datakeeper_list[i].split(":")[0]);	src_index = src_index_start
+	while(available_table[ports_list[src_index]] == 'busy'):	#Get available source port for master to connect on it
+		src_index = (src_index + 1) % (src_index_start + processes_num)
+	available_table[ports_list[src_index]] = 'busy'
+	my_mutex.release()
+	return src_index, dst_index
+
+def notify_src_dst(k,src_index,dst_index):
+	message_src = {'NODE_TYPE': "Source", 'FILE_NAME': k, 'IP': ports_list[dst_index].split(":")[0], 'PORT': ports_list[dst_index].split(":")[1]}
+	message_dst = {'NODE_TYPE': "Destination"}
+	socket.connect("tcp://%s"%(ports_list[dst_index]))
+	socket.send_pyobj(message_dst)
+	socket.disconnect()
+	socket.connect("tcp://%s"%(ports_list[src_index]))
+	socket.send_pyobj(message_src)
+	socket.recv_pyobj()
+	socket.disconnect()
+	my_mutex.acquire()
+	available_table[ports_list[dst_index]] = 'available'
+	available_table[ports_list[src_index]] = 'available'
+	my_mutex.release()
+
 def replica():
+	context = zmq.Context()
+	socket1 = context.socket(zmq.PAIR)
 
 	for k, v in lookup_table.items():
-		i =0;	j=0
-		while(len(v.datakeeper_list)< replica_factor):
-			while(i<len(ports_list)):
-				flag = True;	j=0
-				while(j<len(v.datakeeper_list)):
-					if(v.datakeeper_list[j].split("/")[0] == ports_list[i].split("/")[0]):
-						flag = False
-						break
-					j = j + 1
-				if(!flag):
-					break;
-				i = i + processes_num
-
-
-		
-
+		i = 0;	j = 0
+		while(len(v.datakeepers_list)< replica_factor):
+			src_index, dst_index = src_dst_port(v)
+			notify_src_dst(k,src_index,dst_index)
+			replica_factor = replica_factor + 1
 	time.sleep(1)
 
 def master_client(port1):
@@ -86,10 +128,10 @@ def master_client(port1):
 		data = client.recv_pyobj()              #Receive message from client 
 		
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
-		print("master_client_id %i received command type %s" %(my_id, data['process']))
+		print("master_client_id %i received command type %s" %(my_id, data['PROCESS']))
 		
 
-		if(data['process']=="upload"):
+		if(data['PROCESS']=="upload"):
 			my_mutex.acquire()
 			while(available_table[ports_list[starting_dk_port_index]] == "busy"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
@@ -97,22 +139,19 @@ def master_client(port1):
 			my_mutex.release()
 			client.send_string(ports_list[starting_dk_port_index])
 
-
-		elif(data['process']=="download"):
-			val = lookup_table[data[filename]]
+		elif(data['PROCESS']=="download"):
+			val = lookup_table[data['FILE_NAME']]
 			datakeeper_list= val.datakeepers_list
-			i=0
 			my_mutex.acquire()
-			while(availible_table[datakeeper_list[i]] == "busy"):
-				i= (i+1)%(len(datakeeper_list))
-			availible_table[datakeeper_list[i]] = "busy"
+			ip_index_temp = start_index_for_ip(datakeeper_list[0].split(":")[0]);	ip_index = ip_index_temp
+			while(availible_table[ports_list[ip_index]] == "busy"):
+				ip_index = (ip_index + 1) % (ip_index + processes_num)
+			availible_table[ports_list[ip_index]] = "busy"
 			my_mutex.release()
-			client.send_string(datakeeper_list[i])	
-			
+			client.send_string(ports_list[ip_index])	
 
 		else:
 			print("master_client_id %i received invalid command" %(my_id))
-
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
