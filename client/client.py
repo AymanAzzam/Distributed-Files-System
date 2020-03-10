@@ -19,7 +19,7 @@ def main():
         index = (index + 1) % n
     
     #while True:                                        #commented for now but will need it later
-    data['process'] = "upload"
+    data['PROCESS'] = "upload"
     for i in range(6):
         master.send_pyobj(data)                         #Send data to the master
         print(master.recv_string())                      #receive data from the master
