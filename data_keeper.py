@@ -14,7 +14,7 @@ upload:
     *Request: FILE_NAME, FPS, FOURCC, WIDTH, HEIGHT, COUNT, #0, #1, ..., #[COUNT-1]
 '''
 
-def processStream(message, socket):
+def processStream(message, stream_socket, publisher_socket):
     if ("PROCESS_TYPE") not in message:
         raise NameError("Error in streaming!")
     
@@ -28,11 +28,10 @@ def processStream(message, socket):
         message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
         sent_message = sendFile(message['FILE_NAME'])
         
-        socket.send_pyobj(sent_message)
-        '''
-        #TODO
-        Here notify the master with the successful download
-        '''
+        stream_socket.send_pyobj(sent_message)
+        
+        #send success message to master:
+        success_download(publisher_socket,process)
 
 
     elif process == "upload":
@@ -60,10 +59,8 @@ def processStream(message, socket):
         message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
         saveFile(message)
 
-        '''
-        #TODO
-        Here notify the master with the successful upload
-        '''
+        #send success message to master:
+        success_upload(publisher_socket,process,message['USER_ID'],message['FILE_NAME'])
 
     else:
         raise NameError("Error in streaming!")
@@ -72,12 +69,12 @@ def processStream(message, socket):
 
 
 
-def processReplicate(message, socket, context):
+def processReplicate(message, stream_socket, context, publisher_socket):
     if ("NODE_TYPE") not in message:
         raise NameError("Node type is missed!")
 
     
-    if message['NODE_TYPE'] == "Source":
+    if message['NODE_TYPE'] == "source":
 
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
@@ -96,21 +93,18 @@ def processReplicate(message, socket, context):
         temp_socket.send_pyobj(sent_message)
         temp_socket.close()
         
-        '''
-        #TODO
-        Here notify the master with the successful Sending in replication
-        '''
+        #send success to master:
+        success_download(publisher_socket,message['NODE_TYPE'])
 
 
-    elif message['NODE_TYPE'] == "Destination":
+    elif message['NODE_TYPE'] == "destination":
 
-        received_file = socket.recv_pyobj()
+        received_file = stream_socket.recv_pyobj()
         saveFile(received_file)
 
-        '''
-        #TODO
-        Here notify the master with the successful Receiving in replication
-        '''
+        #send success to master:
+        success_upload (publisher_socket,message['NODE_TYPE'],message['USER_ID'],message['FILE_NAME'])
+
     else:
         raise NameError("Error in Node Type")
 
@@ -118,8 +112,8 @@ def processReplicate(message, socket, context):
 #heart beating::
 def heart_beat (socket):
     data = {
-        'topic' : topic_alive,
-        'msg' : "Alive"
+        'TOPIC' : topic_alive,
+        'IP' : my_ip
     }
     socket.send_pyobj(data)
 
@@ -129,17 +123,29 @@ def alarm_handler(sig, frame):
     signal.alarm(1)
 
 
-#send success message after client upload data successfully::
-def success_upload (socket,path,file,user):
+#send success message after client download/src replicate data successfully::
+def success_download (socket,notification):
     data = {
-        'topic' : topic_success,
-        'file_name' : file,
-        'path' : path,
-        'data_node_no' : (my_ip+':'+publish_port),
-        'user_ID' : user
+        'TOPIC' : topic_success,
+        'IP' : my_ip,
+        'PROCESS_ID' : process_id,
+        'TYPE' : notification
     }
     socket.send_pyobj(data)
 
+#send success message after client upload/destination replicate data successfully::
+def success_upload (socket,notification,user,file_name):
+    data = {
+        'TOPIC' : topic_success,
+        'IP' : my_ip,
+        'PROCESS_ID' : process_id,
+        'TYPE' : notification,
+        'USER_ID' : user,
+        'FILE_NAME' : file_name
+    }
+    socket.send_pyobj(data)
+
+########################################=>MAIN<=###########################################
 dir_path='DATA'
 
 if os.path.isdir(dir_path) == False:
@@ -147,61 +153,46 @@ if os.path.isdir(dir_path) == False:
 
 signal.signal(signal.SIGALRM, alarm_handler)
 
-#ATRRIB: IP STREAM_PORT PUBLISHER_REPORT NOTIFICATION_PORT
-my_ip=sys.argv[1]
-master_ip = sys.argv[5]
-
-stream_port = sys.argv[2]
-#publisher_port
-publish_port = sys.argv[3]
-#notification_port
-subscriber_port = sys.argv[4]
+#ATRRIB: IP STREAM_PORT PUBLISHER_REPORT HEART_BEATING_PROCESS
+my_ip = sys.argv[1]
+process_id = sys.argv[2]
+#stream_port (streaming / notifications)
+stream_port = int(process_id)
+#publisher_port (heart beating / success messages)
+publish_port = stream_port + 1
 #the process will send alive message or not
-alive_sender = sys.argv[6]
+heart_beating_process = sys.argv[3]
 
 #topics:
 #alive topic : 
-topic_alive = 0
+topic_alive = "alive"
 #success topic :
-topic_success = 1
-#notifications topic :
-topic_subscribe = my_ip + ':' + subscriber_port
+topic_success = "success"
 
 context = zmq.Context()
 
-stream = context.socket(zmq.PAIR)
+stream_socket = context.socket(zmq.PAIR)
 #publisher socket:
 publish_socket = context.socket(zmq.PUB)
 #notification socket (subscriber)
-subscriber_socket = context.socket(zmq.SUB)
+notifiction_socket = context.socket(zmq.PAIR)
 
 #connections:
-stream.bind("tcp://"+ my_ip +":" + str(stream_port))  ##note that:: stream port is actually string not integer
-publish_socket.bind("tcp://%s:%s" %(my_ip,publish_port))
-subscriber_socket.connect("tcp://%s:%s" %(master_ip,subscriber_port))
-subscriber_socket.subscribe(topic_subscribe)
+stream_socket.bind("tcp://"+ my_ip +":" + str(stream_port))
+publish_socket.bind("tcp://%s:%s" %(my_ip,str(publish_port)))
 
 
 #heart beating:
-if alive_sender == '1' :
+if heart_beating_process == '1' :
     signal.alarm(1)
 
 while True:
     try:
-        message = stream.recv_pyobj(zmq.DONTWAIT)
-        processStream(message,stream)
+        message = stream_socket.recv_pyobj(zmq.DONTWAIT)
+        if ("PROCESS_TYPE") in message:
+            processStream(message,stream_socket,publish_socket)
+        else:
+            processReplicate(message, stream_socket, context, publish_socket)
     except zmq.Again:
         pass
-
-    '''
-    #TODO
-    [ONLY RUN ON THE FIRST NODE]
-    Heart beats are sent here
-    '''
-
-    '''
-    #TODO
-    #When receiving Replicate notification
-    processReplicate(message, stream, context)
-    '''
     
