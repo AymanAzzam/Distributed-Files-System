@@ -2,6 +2,7 @@ import zmq
 import sys
 import os
 from utilities import *
+import signal
 
 
 '''
@@ -114,26 +115,74 @@ def processReplicate(message, socket, context):
         raise NameError("Error in Node Type")
 
 
+#heart beating::
+def heart_beat (socket):
+    data = {
+        'topic' : topic_alive,
+        'msg' : "Alive"
+    }
+    socket.send_pyobj(data)
 
+#alarm handler::
+def alarm_handler(sig, frame):
+    heart_beat(publish_socket)
+    signal.alarm(1)
+
+
+#send success message after client upload data successfully::
+def success_upload (socket,path,file,user):
+    data = {
+        'topic' : topic_success,
+        'file_name' : file,
+        'path' : path,
+        'data_node_no' : (my_ip+':'+publish_port),
+        'user_ID' : user
+    }
+    socket.send_pyobj(data)
 
 dir_path='DATA'
 os.mkdir(dir_path)
 
+signal.signal(signal.SIGALRM, alarm_handler)
 
 #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT NOTIFICATION_PORT
 my_ip=sys.argv[1]
+master_ip = sys.argv[5]
 
 stream_port = sys.argv[2]
-#publisher_port here
+#publisher_port
+publish_port = sys.argv[3]
+#notification_port
+subscriber_port = sys.argv[4]
+#the process will send alive message or not
+alive_sender = sys.argv[6]
+
+#topics:
+#alive topic : 
+topic_alive = 0
+#success topic :
+topic_success = 1
+#notifications topic :
+topic_subscribe = my_ip + ':' + subscriber_port
 
 context = zmq.Context()
 
 stream = context.socket(zmq.PAIR)
-#publisher socket here
+#publisher socket:
+publish_socket = context.socket(zmq.PUB)
+#notification socket (subscriber)
+subscriber_socket = context.socket(zmq.SUB)
 
-stream.bind("tcp://127.0.0.1:" + str(stream_port))
-#publisher bind here
+#connections:
+stream.bind("tcp://127.0.0.1:" + str(stream_port))  ##note that:: stream port is actually string not integer
+publish_socket.bind("tcp://%s:%s" %(my_ip,publish_port))
+subscriber_socket.connect("tcp://%s:%s" %(master_ip,subscriber_port))
+subscriber_socket.subscribe(topic_subscribe)
 
+
+#heart beating:
+if alive_sender == '1' :
+    signal.alarm(1)
 
 while True:
     try:
@@ -153,3 +202,4 @@ while True:
     #When receiving Replicate notification
     processReplicate(message, stream, context)
     '''
+    
