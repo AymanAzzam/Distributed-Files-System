@@ -117,13 +117,18 @@ def processReplicate(message, socket, context):
 
 
 dir_path='DATA'
-os.mkdir(dir_path)
+
+if os.path.isdir(dir_path) == False:
+    os.mkdir(dir_path)
 
 
 #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT NOTIFICATION_PORT
-my_ip=sys.argv[1]
+my_ip = sys.argv[1]
+# my_ip="127.0.0.1"
 
 stream_port = sys.argv[2]
+# stream_port = 5556
+
 #publisher_port here
 
 context = zmq.Context()
@@ -131,13 +136,13 @@ context = zmq.Context()
 stream = context.socket(zmq.PAIR)
 #publisher socket here
 
-stream.bind("tcp://127.0.0.1:" + str(stream_port))
+stream.bind("tcp://"+ my_ip +":" + str(stream_port))
 #publisher bind here
 
-
+# print("I'm here")
 while True:
     try:
-        message = stream.recv_pyobj(zmq.DOWNTWAIT)
+        message = stream.recv_pyobj(zmq.DONTWAIT)
         processStream(message,stream)
     except zmq.Again:
         pass

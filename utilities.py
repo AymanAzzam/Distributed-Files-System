@@ -17,7 +17,6 @@ def sendFile(file_name):
         'COUNT' : count
     }
 
-
     for i in range(count):
         message.update({("#"+str(i)) : videoData.read()[1]})
 
@@ -36,9 +35,11 @@ def saveFile(video_data):
     width = video_data['WIDTH']
     height = video_data['HEIGHT']
     count = video_data['COUNT']
-
+    
+    
     out_video = cv2.VideoWriter(file_name, fourCC, fps,(width,height))
 
     for i in range(count):
         out_video.write(video_data[("#"+str(i))])
-        out_video.release()
+
+    out_video.release()
