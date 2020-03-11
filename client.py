@@ -3,8 +3,6 @@ import sys
 import random
 from utilities import *
 
-#Assume video in the same path as the client
-
 
 def establishConnections(IP, start_port, process_count):
     
@@ -45,6 +43,9 @@ context, socket_list, master_ports_list = establishConnections(
 
 last_requested_server = 0
 
+context = zmq.Context()
+# DK_IP_port="127.0.0.1:5556"
+
 while True:
     print("Enter Process type: ", end='')
     process = input()
@@ -62,7 +63,7 @@ while True:
         if process == "download":
             sent_message.update({"FILE_NAME" : file_name})
 
-        master_ports_list[last_requested_server].send_pyobj(message)
+        master_ports_list[last_requested_server].send_pyobj(sent_message)
         DK_IP_port = master_ports_list[last_requested_server].recv_string()
         last_requested_server += 1
 
@@ -79,11 +80,36 @@ while True:
             "FILE_NAME" : file_name
             })
 
+        
+        while client_message['FILE_NAME'].find('/') != -1:
+            index=client_message['FILE_NAME'].find('/')
+            size = len(client_message['FILE_NAME'])
+            client_message['FILE_NAME']=client_message['FILE_NAME'][index+1:size]
+
         temp_socket.send_pyobj(client_message)
 
         if process == "download":
             received_message = temp_socket.recv_pyobj()
+            
+            while received_message['FILE_NAME'].find('/') != -1:
+                index=received_message['FILE_NAME'].find('/')
+                size = len(received_message['FILE_NAME'])
+                received_message['FILE_NAME']=received_message['FILE_NAME'][index+1:size]
+            
             saveFile(received_message)
+
+            print("Downloading Done!")
+        else:
+            print("Uploading Done!")
+        
+        
+        temp_socket.close()
+
+        print("Want new process?[Y/n]",end='')
+        choice = input()
+        if choice =='n':
+            break
+        
         
     else:
         print("==========> Wrong process type!\n")

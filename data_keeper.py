@@ -141,7 +141,9 @@ def success_upload (socket,path,file,user):
     socket.send_pyobj(data)
 
 dir_path='DATA'
-os.mkdir(dir_path)
+
+if os.path.isdir(dir_path) == False:
+    os.mkdir(dir_path)
 
 signal.signal(signal.SIGALRM, alarm_handler)
 
@@ -174,7 +176,7 @@ publish_socket = context.socket(zmq.PUB)
 subscriber_socket = context.socket(zmq.SUB)
 
 #connections:
-stream.bind("tcp://127.0.0.1:" + str(stream_port))  ##note that:: stream port is actually string not integer
+stream.bind("tcp://"+ my_ip +":" + str(stream_port))  ##note that:: stream port is actually string not integer
 publish_socket.bind("tcp://%s:%s" %(my_ip,publish_port))
 subscriber_socket.connect("tcp://%s:%s" %(master_ip,subscriber_port))
 subscriber_socket.subscribe(topic_subscribe)
@@ -186,7 +188,7 @@ if alive_sender == '1' :
 
 while True:
     try:
-        message = stream.recv_pyobj(zmq.DOWNTWAIT)
+        message = stream.recv_pyobj(zmq.DONTWAIT)
         processStream(message,stream)
     except zmq.Again:
         pass
