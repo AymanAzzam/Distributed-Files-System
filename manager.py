@@ -12,7 +12,6 @@ replica_factor = 3
 lookup_table = multiprocessing.Manager().dict()
 available_stream_table = multiprocessing.Manager().dict()
 available_publish_table = multiprocessing.Manager().dict()
-available_notification_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
 
 class value:
@@ -50,10 +49,9 @@ def configure():
 		ip = f.readline().rstrip()			#.rstrip to erase "\n" from the ip end
 		ip_port = int(f.readline())
 		for j in range(0,processes_num):
-			available_stream_table[ip+":"+str(ip_port+3*j)] = "available"
-			available_publish_table[ip+":"+str(ip_port+3*j+1)] = "available"
-			available_notification_table[ip+":"+str(ip_port+3*j+2)] = "available"
-			ports_list.append(ip+":"+str(ip_port+3*j))
+			available_stream_table[ip+":"+str(ip_port+2*j)] = "available"
+			available_publish_table[ip+":"+str(ip_port+2*j+1)] = "available"
+			ports_list.append(ip+":"+str(ip_port+2*j))
 	return keepers_num, processes_num
 
 def keeper_for_replica(v):
@@ -92,10 +90,10 @@ def src_dst_port(v):
 def notify_src_dst(socket1,socket2,k,src_index,dst_index):
 	src_ip =  ports_list[src_index].split(":")[0];	src_port_stream = ports_list[src_index].split(":")[1]
 	dst_ip =  ports_list[dst_index].split(":")[0];	dst_port_stream = ports_list[dst_index].split(":")[1]
-	src_port_notification = str(int(src_port_stream) + 2);	dst_port_notification = str(int(dst_port_stream) + 2)
+	src_port_notification = src_port_stream;	dst_port_notification = dst_port_stream
 
-	message_src = {'NODE_TYPE': "Source", 'FILE_NAME': k, 'IP': dst_ip, 'PORT': dst_port_stream}
-	message_dst = {'NODE_TYPE': "Destination"}
+	message_src = {'NODE_TYPE': "source", 'FILE_NAME': k, 'IP': dst_ip, 'PORT': dst_port_stream}
+	message_dst = {'NODE_TYPE': "destination"}
 	socket1.connect("tcp://%s:%s"%(dst_ip,dst_port_notification))
 	socket1.send_pyobj(message_dst)
 	socket1.disconnect()
