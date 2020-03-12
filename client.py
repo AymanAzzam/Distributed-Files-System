@@ -1,18 +1,20 @@
 import zmq
 import sys
+import os
 import random
 from utilities import *
 
 
 def establishConnections(IP, start_port, process_count):
     
-    temp_list = list(range(start_port,start_port+process_count))
+    temp_port_list = list(range(start_port,start_port+process_count))
     master_ports_list = list()
 
-    while len(temp_list):
-        rnd = random.randint(0,5000) % len(temp_list)
-        master_ports_list.append(temp_list[rnd])
-        temp_list.remove(master_ports_list[-1])
+    #Randomizing connection sequence
+    while len(temp_port_list):
+        rnd = random.randint(0,5000) % len(temp_port_list)
+        master_ports_list.append(temp_port_list[rnd])
+        temp_port_list.remove(master_ports_list[-1])
         
     context = zmq.Context()
     socket_list = list()
@@ -33,18 +35,24 @@ From File:
     MASTER_IP
     MASTER_START_PORT
     MASTER_PROCESSES_COUNT
+    DOWNLOAD_DIR
 '''
 master_IP="127.0.0.1"
 master_start_port=40500
 master_processes_count=10
+download_dir = "Download"
+last_requested_server = 0
+
+if os.path.isdir(download_dir) == False:
+    os.mkdir(download_dir)
+
 
 context, socket_list, master_ports_list = establishConnections(
     master_IP, master_start_port, master_processes_count)
 
-last_requested_server = 0
 
 context = zmq.Context()
-# DK_IP_port="127.0.0.1:5556"
+DK_IP_port="127.0.0.1:5556"
 
 while True:
     print("Enter Process type: ", end='')
@@ -59,43 +67,48 @@ while True:
         print("==>Enter File Name: ",end='')
         file_name = input()
         print('')
-        sent_message = {"PROCESS" : process}
-        if process == "download":
-            sent_message.update({"FILE_NAME" : file_name})
 
-        master_ports_list[last_requested_server].send_pyobj(sent_message)
+        #Preparing message sent to master
+        master_message = {"PROCESS" : process}
+        if process == "download":
+            master_message.update({"FILE_NAME" : file_name})
+
+        master_ports_list[last_requested_server].send_pyobj(master_message)
+
         DK_IP_port = master_ports_list[last_requested_server].recv_string()
         last_requested_server += 1
 
-        temp_socket = context.socket(zmq.PAIR)
-        temp_socket.connect("tcp://"+DK_IP_port)
+        #Establishing connection to a data keeper 
+        DK_socket = context.socket(zmq.PAIR)
+        DK_socket.connect("tcp://"+DK_IP_port)
 
-        client_message = dict()
+        DK_message = dict()
 
         if process == "upload":
-            client_message = sendFile(file_name)
+            DK_message = sendFile(file_name)
     
-        client_message.update({
+        DK_message.update({
             "PROCESS_TYPE" : process,
             "FILE_NAME" : file_name
             })
 
         
-        while client_message['FILE_NAME'].find('/') != -1:
-            index=client_message['FILE_NAME'].find('/')
-            size = len(client_message['FILE_NAME'])
-            client_message['FILE_NAME']=client_message['FILE_NAME'][index+1:size]
+        while DK_message['FILE_NAME'].find('/') != -1:
+            index=DK_message['FILE_NAME'].find('/')
+            size = len(DK_message['FILE_NAME'])
+            DK_message['FILE_NAME']=DK_message['FILE_NAME'][index+1:size]
 
-        temp_socket.send_pyobj(client_message)
+        DK_socket.send_pyobj(DK_message)
 
         if process == "download":
-            received_message = temp_socket.recv_pyobj()
+            received_message = DK_socket.recv_pyobj()
             
             while received_message['FILE_NAME'].find('/') != -1:
                 index=received_message['FILE_NAME'].find('/')
                 size = len(received_message['FILE_NAME'])
                 received_message['FILE_NAME']=received_message['FILE_NAME'][index+1:size]
             
+            received_message['FILE_NAME'] = download_dir + '/' + received_message['FILE_NAME']
             saveFile(received_message)
 
             print("Downloading Done!")
@@ -103,7 +116,7 @@ while True:
             print("Uploading Done!")
         
         
-        temp_socket.close()
+        DK_socket.close()
 
         print("Want new process?[Y/n]",end='')
         choice = input()

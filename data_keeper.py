@@ -15,17 +15,15 @@ upload:
 '''
 
 def processStream(message, stream_socket, publisher_socket):
-    if ("PROCESS_TYPE") not in message:
-        raise NameError("Error in streaming!")
-    
+
     process = message['PROCESS_TYPE']
 
     if process == "download":
-    
+        #Message verification
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
-
-        message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
+        
+        message['FILE_NAME'] = data_path+'/'+message['FILE_NAME']
         sent_message = sendFile(message['FILE_NAME'])
         
         stream_socket.send_pyobj(sent_message)
@@ -35,7 +33,7 @@ def processStream(message, stream_socket, publisher_socket):
 
 
     elif process == "upload":
-        
+        #Message verification
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
 
@@ -56,7 +54,7 @@ def processStream(message, stream_socket, publisher_socket):
             if ("#"+str(index)) not in message:
                 raise NameError("frame #"+str(index)+" is missed!")
         
-        message['FILE_NAME'] = dir_path+'/'+message['FILE_NAME']
+        message['FILE_NAME'] = data_path+'/'+message['FILE_NAME']
         saveFile(message)
 
         #send success message to master:
@@ -70,12 +68,9 @@ def processStream(message, stream_socket, publisher_socket):
 
 
 def processReplicate(message, stream_socket, context, publisher_socket):
-    if ("NODE_TYPE") not in message:
-        raise NameError("Node type is missed!")
-
     
     if message['NODE_TYPE'] == "source":
-
+        #Message verification
         if ("FILE_NAME") not in message:
             raise NameError("File name is missed!")
     
@@ -85,13 +80,13 @@ def processReplicate(message, stream_socket, context, publisher_socket):
         if ("PORT") not in message:
             raise NameError("PORT is missed")
             
-        temp_socket = context.socket(zmq.PAIR)
-        temp_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
+        destination_socket = context.socket(zmq.PAIR)
+        destination_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
         sent_message = sendFile(message['FILE_NAME'])
 
-        temp_socket.send_pyobj(sent_message)
-        temp_socket.close()
+        destination_socket.send_pyobj(sent_message)
+        destination_socket.close()
         
         #send success to master:
         success_download(publisher_socket,message['NODE_TYPE'])
@@ -146,18 +141,21 @@ def success_upload (socket,notification,user,file_name):
     socket.send_pyobj(data)
 
 ########################################=>MAIN<=###########################################
-dir_path='DATA'
+data_path='DATA'
 
-if os.path.isdir(dir_path) == False:
-    os.mkdir(dir_path)
+if os.path.isdir(data_path) == False:
+    os.mkdir(data_path)
 
+#####Activate####
 signal.signal(signal.SIGALRM, alarm_handler)
 
 #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT HEART_BEATING_PROCESS
 my_ip = sys.argv[1]
+# my_ip="127.0.0.1"
 process_id = sys.argv[2]
 #stream_port (streaming / notifications)
 stream_port = int(process_id)
+# stream_port = "5556"
 #publisher_port (heart beating / success messages)
 publish_port = stream_port + 1
 #the process will send alive message or not
@@ -174,14 +172,18 @@ context = zmq.Context()
 stream_socket = context.socket(zmq.PAIR)
 #publisher socket:
 publish_socket = context.socket(zmq.PUB)
+
+####### No need anymore ########
 #notification socket (subscriber)
-notifiction_socket = context.socket(zmq.PAIR)
+# notifiction_socket = context.socket(zmq.PAIR)
+################################
+
 
 #connections:
 stream_socket.bind("tcp://"+ my_ip +":" + str(stream_port))
 publish_socket.bind("tcp://%s:%s" %(my_ip,str(publish_port)))
 
-
+#####Activate####
 #heart beating:
 if heart_beating_process == '1' :
     signal.alarm(1)
@@ -191,8 +193,10 @@ while True:
         message = stream_socket.recv_pyobj(zmq.DONTWAIT)
         if ("PROCESS_TYPE") in message:
             processStream(message,stream_socket,publish_socket)
-        else:
+        elif ("NODE_TYPE") in message:
             processReplicate(message, stream_socket, context, publish_socket)
+        else:
+            raise NameError("Process type is missed!")
     except zmq.Again:
         pass
     
