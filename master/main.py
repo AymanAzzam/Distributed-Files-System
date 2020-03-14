@@ -36,13 +36,22 @@ if __name__ == "__main__":
 		my_mutex = Lock()
 		my_id = random.randrange(10000)
 
-		keepers_num, processes_num,available_stream_table,available_publish_table,ports_list = configure()
+		replica_factor, replica_period, keepers_num, processes_num,available_stream_table,available_publish_table,ports_list = configure()
 		
 		p = []
 		for i in range(0,n):
-			p.append(multiprocessing.Process(target=master_client, args=(available_stream_table,ports_list,lookup_table,ip1,port,keepers_num,processes_num,my_mutex,)))
+			p.append(multiprocessing.Process(target=master_cl ient, args=(available_stream_table,ports_list,lookup_table,ip1,port,keepers_num,processes_num,my_mutex,)))
 			p[i].start()
 			port = port + 1
 
 		for i in range(0,n):
 			p[i].join()
+
+		
+		# 1) check the replicas for all files
+		multiprocessing(target=replica, args=(replica_factor,replica_period,lookup_table,ports_list,processes_num,my_mutex, ))
+
+		# 2) recieve the heart beat
+		#while True:
+
+

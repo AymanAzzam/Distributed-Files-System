@@ -47,11 +47,11 @@ def notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list):
 	socket2.send_pyobj(message_src)
 	socket2.disconnect()
 
-def replica(lookup_table,ports_list,processes_num,my_mutex):
+def replica(replica_factor, replica_period, lookup_table,ports_list,processes_num,my_mutex):
 	context = zmq.Context()
 	socket1 = context.socket(zmq.PAIR)
 	socket2 = context.socket(zmq.PAIR)
-	replica_factor = 3
+	#replica_factor = 3
 
 	while True:
 		for k, v in lookup_table.items():
@@ -60,4 +60,4 @@ def replica(lookup_table,ports_list,processes_num,my_mutex):
 				src_index, dst_index,dst_index_start,available_stream_table = src_dst_port(v,available_stream_table,ports_list,processes_num,my_mutex)
 				notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list)
 				v.datakeepers_list.append(ports_list[dst_index_start])	# append the starting port for destination datakeeper on that file
-		time.sleep(1)
+		time.sleep(replica_period)

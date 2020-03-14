@@ -2,6 +2,8 @@ import multiprocessing
 
 def configure():
 	f = open("config.txt", "r")
+	replica_factor = int(f.readline())
+	replica_period = int(f.readline())
 	keepers_num = int(f.readline())
 	processes_num = int(f.readline())
 
@@ -16,4 +18,4 @@ def configure():
 			available_stream_table[ip+":"+str(ip_port+2*j)] = "available"
 			available_publish_table[ip+":"+str(ip_port+2*j+1)] = "available"
 			ports_list.append(ip+":"+str(ip_port+2*j))
-	return keepers_num, processes_num,available_stream_table,available_publish_table,ports_list
+	return replica_factor, replica_period, keepers_num, processes_num,available_stream_table,available_publish_table,ports_list

@@ -27,9 +27,19 @@ def master_client(available_stream_table,ports_list,lookup_table,ip1,port1,keepe
 			client.send_string(ports_list[starting_dk_port_index])
 
 		elif(data['PROCESS']=="download"):
-			val = lookup_table[data['FILE_NAME']]
+			# filename may be invalid !!!!
+			try:
+				val = lookup_table[data['FILE_NAME']]
+			except KeyError:
+				client.send_string("File name invalid")
+				break;
+
+				
 			datakeeper_list= val.datakeepers_list
 			my_mutex.acquire()
+
+			# ip_index_temp lazmeto eh ??
+
 			ip_index_temp = start_index_for_ip(datakeeper_list[0].split(":")[0],ports_list);	ip_index = ip_index_temp
 			while(available_stream_table[ports_list[ip_index]] == "busy"):
 				ip_index = (ip_index + 1) % (ip_index + processes_num)
