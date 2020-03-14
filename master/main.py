@@ -14,6 +14,7 @@ keepers_num = 0;	processes_num = 0
 replica_factor = 3
 
 lookup_table = multiprocessing.Manager().dict()
+alive_table = multiprocessing.Manager().dict()
 available_stream_table = multiprocessing.Manager().dict()
 available_publish_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
@@ -33,25 +34,27 @@ def updateLookup(proc_num,filename, value,lookup_table):
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
+
+		
+
+
 		my_mutex = Lock()
 		my_id = random.randrange(10000)
 
-		replica_factor, replica_period, keepers_num, processes_num,available_stream_table,available_publish_table,ports_list = configure()
+		replica_factor, replica_period, keepers_num, processes_num,alive_table,available_stream_table,available_publish_table,ports_list = configure()
 		
 		p = []
 		for i in range(0,n):
-			p.append(multiprocessing.Process(target=master_cl ient, args=(available_stream_table,ports_list,lookup_table,ip1,port,keepers_num,processes_num,my_mutex,)))
+			p.append(multiprocessing.Process(target=master_client, args=(alive_table,available_stream_table,ports_list,lookup_table,ip1,port,keepers_num,processes_num,my_mutex,)))
 			p[i].start()
 			port = port + 1
 
-		for i in range(0,n):
-			p[i].join()
-
-		
 		# 1) check the replicas for all files
-		multiprocessing(target=replica, args=(replica_factor,replica_period,lookup_table,ports_list,processes_num,my_mutex, ))
-
+		p.append(multiprocessing(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex, )))
+		p[n].start()
 		# 2) recieve the heart beat
-		#while True:
+		p.append(multiprocessing(target=alive, args=(ip,port,alive_period, alive_table,available_stream_table,my_mutex,)))
+		p[n+1].start()
 
-
+		for i in range(0,n+2):
+			p[i].join()
