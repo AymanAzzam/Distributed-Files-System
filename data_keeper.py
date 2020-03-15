@@ -10,7 +10,6 @@ import multiprocessing
 download:
     *Request: FILE_NAME
     *Response: FILE_NAME, FPS, FOURCC, WIDTH, HEIGHT, COUNT, #0, #1, ..., #[COUNT-1]
-
 upload:
     *Request: FILE_NAME, FPS, FOURCC, WIDTH, HEIGHT, COUNT, #0, #1, ..., #[COUNT-1]
 '''
