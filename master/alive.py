@@ -1,39 +1,29 @@
 from zmq import EAGAIN
 import zmq
-from threading import Timer
+from threading import Thread, Event, Timer
+import time
 
-import rzmq
+
 
 
 temp_dk = dict()
-def timeout():
-	raise Exception("Time out")
+# Event object used to send signals from one thread to another
+stop_event = Event()
 
 
 def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex):
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
 	socket.setsockopt(zmq.SUBSCRIBE, 'alive')
-	#socket.setsockopt(zmq.RCVTIMEO, 1) 
 	socket.bind('tcp://%s:%s'%(ip,port))
 
-	while True:
-
-		for k, v in alive_table.items():
-			temp_dk[k] = "dead"
-
-		flag = True ##need to solve later
+	for k, v in alive_table.items():
+		temp_dk[k] = "dead"
 
 			
-	while ( socket.recv_pyobj() ): 
-		print("inside loop")
-		'''
-		errno = zmq.errno()
-		if errno == EAGAIN:
-			print("Got EAGAIN Error")
-			raise Again(errno)
-			
-		val = socket.recv_pyobj();	flag = False
+	while ( True): 
+
+		val = socket.recv_pyobj();
 		if (val['TOPIC'] == "alive"):
 			temp_dk[val['IP']] = "alive"
 		elif (val['TOPIC'] == "success"):
@@ -42,18 +32,33 @@ def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex):
 			my_mutex.release()
 		else:
 			print("Alive process got unexcpected topic")
-	errno = zmq.errno()
-	if errno == EAGAIN:
-		print("Got EAGAIN Error")
-		raise Again(errno)
-		'''
 
-	my_mutex.acquire()
-	for k, v in temp_dk.items():
-		alive_table[k] = v
-	my_mutex.release()
+		if stop_event.is_set():
+            break
+ 		
 
-	time.sleep(alive_period)
+
+	
+
+def alive_helper(ip,port,alive_period, alive_table,available_stream_table,my_mutex):
+    # We create another Thread
+	while True:	
+		number = 3
+		alive_thread = Thread(target=alive, args=(ip,port,alive_period, alive_table,available_stream_table,my_mutex))
+	 
+	    # Here we start the thread and we wait 5 seconds before the code continues to execute.
+		alive_thread.start()
+		alive_thread.join(timeout=0.5)
+	 
+	    # We send a signal that the other thread should stop.
+		stop_event.set()
+		
+		my_mutex.acquire()
+		for k, v in temp_dk.items():
+			alive_table[k] = v
+		my_mutex.release()
+
+		print("Hey there! I timed out! You can do things after me!")	
 
 			
 

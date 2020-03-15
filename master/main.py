@@ -54,7 +54,7 @@ if __name__ == "__main__":
 		p.append(multiprocessing.Process(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex, )))
 		p[n].start()
 		# 2) recieve the heart beat
-		p.append(multiprocessing.Process(target=alive, args=(ip1,2*port+1,alive_period, alive_table,available_stream_table,my_mutex,)))
+		p.append(multiprocessing.Process(target=alive_helper, args=(ip1,2*port+1,alive_period, alive_table,available_stream_table,my_mutex,)))
 		p[n+1].start()
 
 		for i in range(0,n+2):
