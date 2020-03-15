@@ -37,24 +37,24 @@ From File:
     MASTER_PROCESSES_COUNT
     DOWNLOAD_DIR
 '''
-# master_IP="127.0.0.1"
-# master_start_port=40500
-# master_processes_count=10
-download_dir = "Download"
-# last_requested_server = 0
+master_IP=sys.argv[1]
+master_start_port=int(sys.argv[2])
+master_processes_count=int(sys.argv[3])
+download_dir = sys.argv[4]
+last_requested_server = 0
 
 if os.path.isdir(download_dir) == False:
     os.mkdir(download_dir)
 
 
-# context, socket_list, master_ports_list = establishConnections(
-#     master_IP, master_start_port, master_processes_count)
+context, master_socket_list, master_ports_list = establishConnections(
+    master_IP, master_start_port, master_processes_count)
 
 
 context = zmq.Context()
 # DK_IP_port = "127.0.0.1:5556"
-DK_PORT=sys.argv[1]
-DK_IP_port = "127.0.0.1:"+DK_PORT
+# DK_PORT=sys.argv[1]
+# DK_IP_port = "127.0.0.1:"+DK_PORT
 
 while True:
     print("Enter Process type: ", end='')
@@ -71,15 +71,16 @@ while True:
         print('')
 
         #Preparing message sent to master
-        # master_message = {"PROCESS" : process}
-        # if process == "download":
-        #     master_message.update({"FILE_NAME" : file_name})
+        master_message = {"PROCESS" : process}
+        if process == "download":
+            master_message.update({"FILE_NAME" : file_name})
 
-        # master_process = master_ports_list[last_requested_server]
-        # master_process.send_pyobj(master_message)
+        master_process = master_socket_list[last_requested_server]
+        master_process.send_pyobj(master_message)
 
-        # DK_IP_port = master_process.recv_string()
-        # last_requested_server += 1
+        DK_IP_port = master_process.recv_string()
+        last_requested_server += 1
+        last_requested_server %= master_processes_count
 
         #Establishing connection to a data keeper 
         DK_socket = context.socket(zmq.PAIR)

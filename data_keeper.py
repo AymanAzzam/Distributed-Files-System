@@ -143,14 +143,10 @@ def main(process_id,heart_beating_process):
         socket.send_pyobj(data)
 
     ########################################=>MAIN<=########################################
-    # data_path='DATA'
-
     #####SIGNAL####
     # signal.signal(signal.SIGALRM, alarm_handler)
 
     #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT HEART_BEATING_PROCESS
-    # my_ip = sys.argv[1]
-    # process_id = sys.argv[2]
     #stream_port (streaming / notifications)
     stream_port = int(process_id)
     # stream_port = "5556"
@@ -167,14 +163,10 @@ def main(process_id,heart_beating_process):
 
     context = zmq.Context()
 
+    #streamer socket
     stream_socket = context.socket(zmq.PAIR)
     #publisher socket:
     publish_socket = context.socket(zmq.PUB)
-
-    ####### No need anymore ########
-    #notification socket (subscriber)
-    # notifiction_socket = context.socket(zmq.PAIR)
-    ################################
 
 
     #connections:
@@ -198,11 +190,11 @@ def main(process_id,heart_beating_process):
 ########################=>MAIN_PROCESS<=########################
 
 my_ip = sys.argv[1]
-data_path = sys.argv[2]
+data_path = sys.argv[4]
 
 if __name__ == "__main__":
+    current_port = int(sys.argv[2])
     processes_num = int(sys.argv[3])
-    current_port = int(sys.argv[4])
 
     if os.path.isdir(data_path) == False:
         os.mkdir(data_path)
@@ -211,15 +203,13 @@ if __name__ == "__main__":
     for i in range(0,processes_num):
         processes_list.append(multiprocessing.Process(
             target=main,args=(current_port,(i==0),)))
+        processes_list[-1].daemon = True    # To terminate the child process once the parent terminated
         processes_list[-1].start()
         print("Process " + str(current_port) + " started!")
         current_port += 2
-    
-    while True:
-
 
     print("Press any key to teriminate the data keeper!")
     ch = input()
-    for process in processes_list:
-        if process.is_alive() == True:
-            process.terminate()
+    # for process in processes_list:
+    #     if process.is_alive() == True:
+    #         process.terminate()
