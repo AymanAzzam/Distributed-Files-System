@@ -12,6 +12,7 @@ def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex,stop
 	socket = context.socket(zmq.SUB)
 	socket.bind('tcp://%s:%s'%(ip,port))
 	socket.subscribe("")
+	socket.setsockopt(zmq.RCVTIMEO, 100)
 	
 	for k, v in alive_table.items():
 		temp_dk[k] = "dead"
@@ -19,7 +20,13 @@ def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex,stop
 	while True:
 
 		while True: 
-			val = socket.recv_pyobj();
+			try:
+				val = socket.recv_pyobj();
+				#print( rec , "recieved" )
+			except zmq.error.Again as e:
+				print('test failed, answer timed out ')
+				continue	
+			
 			if (val['TOPIC'] == "alive"):
 				temp_dk[val['IP']] = "alive"
 			elif (val['TOPIC'] == "success"):
