@@ -7,6 +7,7 @@ def configure():
 	keepers_num = int(f.readline())
 	processes_num = int(f.readline())
 
+	alive_table = multiprocessing.Manager().dict()
 	available_stream_table = multiprocessing.Manager().dict()
 	available_publish_table = multiprocessing.Manager().dict()
 	ports_list = multiprocessing.Manager().list()

@@ -8,10 +8,11 @@ from master_client import *
 from configure import *
 from print_tables import *
 from replica import *
+from alive import *
 
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
 keepers_num = 0;	processes_num = 0
-replica_factor = 3
+replica_factor = 3; alive_period = 1
 
 lookup_table = multiprocessing.Manager().dict()
 alive_table = multiprocessing.Manager().dict()
@@ -50,10 +51,10 @@ if __name__ == "__main__":
 			port = port + 1
 
 		# 1) check the replicas for all files
-		p.append(multiprocessing(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex, )))
+		p.append(multiprocessing.Process(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex, )))
 		p[n].start()
 		# 2) recieve the heart beat
-		p.append(multiprocessing(target=alive, args=(ip,port,alive_period, alive_table,available_stream_table,my_mutex,)))
+		p.append(multiprocessing.Process(target=alive, args=(ip1,2*port+1,alive_period, alive_table,available_stream_table,my_mutex,)))
 		p[n+1].start()
 
 		for i in range(0,n+2):

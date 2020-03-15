@@ -20,7 +20,7 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 
 		if(data['PROCESS']=="upload"):
 			my_mutex.acquire()
-			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy" or alive_table.[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
+			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
 			available_stream_table[ports_list[starting_dk_port_index]] = "busy"
 			my_mutex.release()
@@ -41,7 +41,7 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 			# ip_index_temp lazmeto eh ??
 
 			ip_index_temp = start_index_for_ip(datakeeper_list[0].split(":")[0],ports_list);	ip_index = ip_index_temp
-			while(available_stream_table[ports_list[ip_index]] == "busy" or alive_table.[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
+			while(available_stream_table[ports_list[ip_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				ip_index = (ip_index + 1) % (ip_index + processes_num)
 			available_stream_table[ports_list[ip_index]] = "busy"
 			my_mutex.release()
