@@ -3,11 +3,15 @@ from zmq import EAGAIN
 import multiprocessing
 from multiprocessing import Event
 import time
+from print_tables import *
+import random
 
 
 temp_dk = dict()
 
 def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex,stop_event):
+	my_id = random.randrange(10000)
+	
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
 	socket.bind('tcp://%s:%s'%(ip,port))
@@ -24,7 +28,7 @@ def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex,stop
 				val = socket.recv_pyobj();
 				#print( rec , "recieved" )
 			except zmq.error.Again as e:
-				print('test failed, answer timed out ')
+				#print('Alived rrrrece timed out ')
 				continue	
 			
 			if (val['TOPIC'] == "alive"):
@@ -44,10 +48,8 @@ def alive(ip,port,alive_period, alive_table,available_stream_table,my_mutex,stop
 		for k, v in temp_dk.items():
 			alive_table[k] = v
 		my_mutex.release()
+		printAlive(my_id,alive_table)
  		
-
-
-	
 
 def alive_helper(ip,port,alive_period, alive_table,available_stream_table,my_mutex):
 		# Event object used to send signals from one thread to another

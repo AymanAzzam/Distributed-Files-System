@@ -17,7 +17,6 @@ replica_factor = 3; alive_period = 1
 lookup_table = multiprocessing.Manager().dict()
 alive_table = multiprocessing.Manager().dict()
 available_stream_table = multiprocessing.Manager().dict()
-available_publish_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
 
 class value:
@@ -35,14 +34,11 @@ def updateLookup(proc_num,filename, value,lookup_table):
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:
-
 		
-
-
 		my_mutex = Lock()
 		my_id = random.randrange(10000)
 
-		replica_factor, replica_period, keepers_num, processes_num,alive_table,available_stream_table,available_publish_table,ports_list = configure()
+		replica_factor, replica_period, keepers_num, processes_num = configure(alive_table,available_stream_table,ports_list)
 		
 		p = []
 		for i in range(0,n):
