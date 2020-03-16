@@ -9,7 +9,7 @@ def keeper_for_replica(v,ports_list,processes_num):
 		while(i<len(v.datakeepers_list) and flag):
 			#TODO
 			#Check here also if this data keeper is alive
-			if(v.datakeeper_lists[i].split(":")[0] == ports_list[index].split(":")[0]):
+			if(v.datakeepers_list[i].split(":")[0] == ports_list[index].split(":")[0]):
 				flag = False
 			i = i + 1
 		if(flag):
@@ -27,7 +27,7 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	available_stream_table[ports_list[dst_index]] = 'busy'
 	
 	print("Master searching about available port for replica source")
-	src_index_start = start_index_for_ip(v.datakeeper_list[i].split(":")[0],ports_list);	src_index = src_index_start
+	src_index_start = start_index_for_ip(v.datakeepers_list[i].split(":")[0],ports_list);	src_index = src_index_start
 	while(available_stream_table[ports_list[src_index]] == 'busy' or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):	#Get available source port for master to connect on it
 		src_index = (src_index + 1) % (src_index_start + processes_num)
 	print("Master got %s for replica source"%(ports_list[starting_dk_port_index]))	
@@ -56,6 +56,9 @@ def replica(replica_factor, replica_period, alive_table,lookup_table,available_s
 	socket1 = context.socket(zmq.PAIR)
 	socket2 = context.socket(zmq.PAIR)
 	#replica_factor = 3
+
+	if(len(ports_list)/processes_num<replica_factor):
+		return
 
 	while True:
 		#TODO

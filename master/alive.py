@@ -35,6 +35,9 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				#print( rec , "recieved" )
 			except zmq.error.Again as e:
 				#print('Alived rrrrece timed out ')
+				if stop_event.is_set():
+					stop_event.clear()
+					break
 				continue	
 			
 			if (val['TOPIC'] == "alive"):
