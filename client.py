@@ -83,13 +83,13 @@ while True:
         master_received = master_process.recv_pyobj()
         
         if ("FILE_NAME" in master_received):
-            print ("File name invalid")
+            print ("File name invalid\n")
             continue
         else:
             DK_IP_port = master_received['IP'] + ":" + master_received['PORT']
         last_requested_server += 1
         last_requested_server %= master_processes_count
-        print("Client got ip:port %s"%(DK_IP_port))
+        print("Client got ip:port %s\n"%(DK_IP_port))
 
         #Establishing connection to a data keeper 
         DK_socket = context.socket(zmq.PAIR)
@@ -116,14 +116,14 @@ while True:
             received_message['FILE_NAME'] = download_dir + '/' + received_message['FILE_NAME'].split("/")[-1]
             saveFile(received_message)
 
-            print("Downloading Done!")
+            print("Downloading Done!\n")
         else:
-            print("Uploading Done!")
+            print("Uploading Done!\n")
         
         
         DK_socket.close()
 
-        print("Want new process?[Y/n]",end='')
+        print("Want new process?[Y/n]   ",end='')
         choice = input()
         if choice =='n' or choice =='N':
             break    

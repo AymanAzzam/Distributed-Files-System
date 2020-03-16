@@ -17,14 +17,14 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 		data = client.recv_pyobj()              #Receive message from client 
 		
 		#receiving dictionary contains command(upload/download) and file(file_Data for upload/file_name for download)
-		print("master_client_id %i received command type %s" %(my_id, data['PROCESS']))
+		print("master_client_id %i received command type %s\n" %(my_id, data['PROCESS']))
 
 		if(data['PROCESS']=="upload"):
 			my_mutex.acquire()
-			print("Master searching about available port  to upload")
-			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy"):# or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
+			print("Master searching about available port  to upload\n")
+			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
-			print("Master sent %s for client to upload to"%(ports_list[starting_dk_port_index]))
+			print("Master sent %s for client to upload to\n"%(ports_list[starting_dk_port_index]))
 			available_stream_table[ports_list[starting_dk_port_index]] = "busy"
 			my_mutex.release()
 			msg={
@@ -45,13 +45,13 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 			datakeeper_list = val.datakeepers_list
 			my_mutex.acquire()
 
-			print("Master searching about available port  to download")
+			print("Master searching about available port  to download\n")
 			ip_index_temp = start_index_for_ip(datakeeper_list[0].split(":")[0],ports_list);	ip_index = ip_index_temp
 			#WARNING
 			#There's a problem in the while loop => list index out of range 
 			while(available_stream_table[ports_list[ip_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				ip_index = (ip_index + 1) % (ip_index + processes_num)
-			print("Master sent %s for client to download from"%(ports_list[starting_dk_port_index]))	
+			print("Master sent %s for client to download from\n"%(ports_list[starting_dk_port_index]))	
 			available_stream_table[ports_list[ip_index]] = "busy"
 			my_mutex.release()
 
@@ -61,6 +61,6 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 			}
 			client.send_pyobj(msg)
 		else:
-			print("master_client_id %i received invalid command" %(my_id))
+			print("master_client_id %i received invalid command\n" %(my_id))
 
 		printAvailableStream(my_id,available_stream_table)

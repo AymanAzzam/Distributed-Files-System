@@ -32,7 +32,6 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 		while True: 
 			try:
 				val = socket.recv_pyobj()
-				#print( rec , "recieved" )
 			except zmq.error.Again as e:
 				#print('Alived rrrrece timed out ')
 				if stop_event.is_set():
@@ -46,22 +45,26 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				my_mutex_stream.acquire()
 				available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 
 				my_mutex_stream.release()
-				if (val['TYPE'] == "destination"):
-					my_mutex_lookup.acquire()
-					lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))) 
-					# lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
-					lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
-					my_mutex_lookup.release()
+				if (val['TYPE'] == "download"):
+					print("Downloading done\n")
+
 				elif (val['TYPE'] == "upload"):
 					my_mutex_lookup.acquire()
-					lookup_table.update({val['FILE_NAME'] : value(
-						val['USER_ID'], [val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))],[val['FILE_NAME']])
-					})
+					if(val['FILE_NAME'] in lookup_table):
+						lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))) 
+						# lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
+						lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
+					else:
+						ob = value(val['USER_ID'], [val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))], [val['FILE_NAME']])
+						lookup_table[val['FILE_NAME']] = ob 
 					my_mutex_lookup.release()
+					print("Uploading done\n")
 					#TODO:
 					#You have to deal with the replica here
+				printAvailableStream(my_id,available_stream_table)
+				printLookup(my_id,lookup_table)
 			else:
-				print("Alive process got unexcpected topic")
+				print("Alive process got unexcpected topic\n")
 
 			if stop_event.is_set():
 				stop_event.clear()
@@ -71,7 +74,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 		for k, v in temp_dk.items():
 			alive_table[k] = v
 		my_mutex_alive.release()
-		printAlive(my_id,alive_table)
+		#printAlive(my_id,alive_table)
 		time.sleep(0.5)
 
 def alive_helper(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive):

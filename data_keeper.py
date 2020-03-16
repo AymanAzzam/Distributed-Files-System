@@ -119,7 +119,7 @@ def main(process_id,heart_beating_process):
         socket.send_pyobj(data)
 
     #alarm handler::
-    def alarm_handler(sig, frame):
+    def alarm_handler(signum=None, frame=None):
         heart_beat(publish_socket)
         signal.alarm(1)
 
@@ -133,6 +133,7 @@ def main(process_id,heart_beating_process):
             'TYPE' : notification
         }
         socket.send_pyobj(data)
+        print("Downloading done\n")
 
     #send success message after client upload/destination replicate data successfully::
     def success_upload (socket,notification,user,file_name):
@@ -145,14 +146,15 @@ def main(process_id,heart_beating_process):
             'FILE_NAME' : file_name
         }
         socket.send_pyobj(data)
+        print("Uploading done\n")
 
     ########################################=>MAIN<=########################################
     #####SIGNAL####
-    # signal.signal(signal.SIGALRM, alarm_handler)
-
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(1)
     #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT HEART_BEATING_PROCESS
     #stream_port (streaming / notifications)
-    stream_port = int(process_id)
+    stream_port = process_id
     # stream_port = "5556"
     #publisher_port (heart beating / success messages)
     publish_port = stream_port + 1
@@ -189,7 +191,7 @@ def main(process_id,heart_beating_process):
         elif ("NODE_TYPE") in message:
             processReplicate(message, stream_socket, context, publish_socket)
         else:
-            raise NameError("Process type is missed!")
+            raise NameError("Process type is missed!\n")
 
 ########################=>MAIN_PROCESS<=########################
 
@@ -212,7 +214,7 @@ if __name__ == "__main__":
         print("Process " + str(current_port) + " started!")
         current_port += 2
 
-    print("Press any key to teriminate the data keeper!")
+    print("Press any key to teriminate the data keeper!\n")
     ch = input()
     # for process in processes_list:
     #     if process.is_alive() == True:
