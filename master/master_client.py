@@ -22,19 +22,24 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 		if(data['PROCESS']=="upload"):
 			my_mutex.acquire()
 			print("Master searching about available port  to upload")
-			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
+			while(available_stream_table[ports_list[starting_dk_port_index]] == "busy"):# or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				starting_dk_port_index=(starting_dk_port_index+1)%(keepers_num*processes_num)
 			print("Master sent %s for client to upload to"%(ports_list[starting_dk_port_index]))
 			available_stream_table[ports_list[starting_dk_port_index]] = "busy"
 			my_mutex.release()
-			client.send_string(ports_list[starting_dk_port_index])
+			delimeter = ports_list[starting_dk_port_index].find(':')
+			msg={
+				'IP' : ports_list[starting_dk_port_index][0:delimeter],
+				'PORT' : ports_list[starting_dk_port_index][delimeter+1:len(ports_list[starting_dk_port_index])]
+			}
+			client.send_pyobj(msg)
 
 		elif(data['PROCESS']=="download"):
 			# filename may be invalid !!!!
 			if(data['FILE_NAME'] not in lookup_table):
 				msg = {'FILE_NAME':"File name invalid"}
 				client.send_pyobj(msg)
-				break
+				continue
 			else:
 				val = lookup_table[data['FILE_NAME']]
 				

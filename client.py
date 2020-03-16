@@ -82,7 +82,7 @@ while True:
         
         if ("FILE_NAME" in master_received):
             print ("File name invalid")
-            break
+            continue
         else:
             DK_IP_port = master_received['IP'] + ":" + master_received['PORT']
         last_requested_server += 1
