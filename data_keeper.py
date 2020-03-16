@@ -1,6 +1,7 @@
 import zmq
 import sys
 import os
+import time
 from utilities import *
 import signal
 import multiprocessing
@@ -85,7 +86,6 @@ def main(process_id,heart_beating_process):
 
 
     def processReplicate(message, stream_socket, context, publisher_socket):
-        
         if message['NODE_TYPE'] == "source":
 
             print("Replica Request. I'm source...")
@@ -102,7 +102,8 @@ def main(process_id,heart_beating_process):
 
             if ("USER_ID") not in message:
                 raise NameError("User ID is missed")
-                
+
+            #time.sleep(2)
             destination_socket = context.socket(zmq.PAIR)
             destination_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
@@ -113,9 +114,11 @@ def main(process_id,heart_beating_process):
 
             sent_message.update({'USER_ID' : message['USER_ID']})
 
+            print("source sending message to "+"tcp://" + message['IP'] + ":" + message['PORT']+"...")
             destination_socket.send_pyobj(sent_message)
             destination_socket.close()
-            
+            print("source done")
+
             print("File streamed successfully!")
 
             #send success to master:
@@ -220,8 +223,9 @@ def main(process_id,heart_beating_process):
             processStream(message,stream_socket,publish_socket)
             print("Press any key to teriminate the data keeper!\n")
         elif ("NODE_TYPE") in message:
-            processReplicate(message, stream_socket, context, publish_socket)
-            print("Press any key to teriminate the data keeper!\n")
+        	print("my connection is "+"tcp://"+ my_ip +":" + str(stream_port)+"...")
+        	processReplicate(message, stream_socket, context, publish_socket)
+        	print("Press any key to teriminate the data keeper!\n")
         else:
             raise NameError("Process type is missed!\n")
 
