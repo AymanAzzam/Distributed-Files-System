@@ -3,7 +3,8 @@ import cv2
 def sendFile(file_name):
     videoData = cv2.VideoCapture(file_name)         #Capture Video
     fps = videoData.get(cv2.CAP_PROP_FPS)                   #GET FPS (Frame per second)
-    fourCC = int(videoData.get(cv2.CAP_PROP_FOURCC))        #GET FOURCC (Enconding for some attributes)
+    #fourCC = int(videoData.get(cv2.CAP_PROP_FOURCC))        #GET FOURCC (Enconding for some attributes)
+    fourCC = cv2.VideoWriter_fourcc(*"mp4v")
     width = int(videoData.get(cv2.CAP_PROP_FRAME_WIDTH))    #GET WIDTH
     height = int(videoData.get(cv2.CAP_PROP_FRAME_HEIGHT))  #GET HEIGHT
     count = int(videoData.get(cv2.CAP_PROP_FRAME_COUNT))    #GET FRAMES COUNT
