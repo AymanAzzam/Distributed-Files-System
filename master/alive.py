@@ -26,7 +26,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 
 		while True: 
 			try:
-				val = socket.recv_pyobj();
+				val = socket.recv_pyobj()
 				#print( rec , "recieved" )
 			except zmq.error.Again as e:
 				#print('Alived rrrrece timed out ')
@@ -36,13 +36,13 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				temp_dk[val['IP']] = "alive"
 			elif (val['TOPIC'] == "success"):
 				my_mutex_stream.acquire()
-				available_stream_table[val["IP"]+":"+val["process_id"]]= "available" 
+				available_stream_table[val["IP"]+":"+val["PROCESS_ID"]]= "available" 
 				my_mutex_stream.release()
 				if (val['NODE_TYPE'] == "destination"):
 					my_mutex_lookup.acquire()
 					lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+start_index_for_ip(val['IP'],ports_list)) 
 					lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
-					lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_PATH'])
+					lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
 					my_mutex_lookup.release()
 			else:
 				print("Alive process got unexcpected topic")
@@ -56,7 +56,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 			alive_table[k] = v
 		my_mutex_alive.release()
 		printAlive(my_id,alive_table)
- 		
+		time.sleep(0.5)
 
 def alive_helper(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive):
 		# Event object used to send signals from one thread to another

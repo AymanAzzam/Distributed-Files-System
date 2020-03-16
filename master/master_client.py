@@ -31,15 +31,14 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 
 		elif(data['PROCESS']=="download"):
 			# filename may be invalid !!!!
-			try:
-				val = lookup_table[data['FILE_NAME']]
-			except KeyError:
+			if(data['FILE_NAME'] not in lookup_table):
 				msg = {'FILE_NAME':"File name invalid"}
 				client.send_pyobj(msg)
-				break;
-
+				break
+			else:
+				val = lookup_table[data['FILE_NAME']]
 				
-			datakeeper_list= val.datakeepers_list
+			datakeeper_list = val.datakeepers_list
 			my_mutex.acquire()
 
 			print("Master searching about available port  to download")
@@ -49,8 +48,13 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 			print("Master sent %s for client to download from"%(ports_list[starting_dk_port_index]))	
 			available_stream_table[ports_list[ip_index]] = "busy"
 			my_mutex.release()
-			client.send_string(ports_list[ip_index])	
 
+			delimeter = ports_list[ip_index].find(':')
+			msg={
+				'IP' : ports_list[ip_index][0:delimeter],
+				'PORT' : ports_list[ip_index][delimeter+1:len(ports_list[ip_index])]
+			}
+			client.send_pyobj(msg)
 		else:
 			print("master_client_id %i received invalid command" %(my_id))
 
