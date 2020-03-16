@@ -37,7 +37,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				break	
 			
 			if (val['TOPIC'] == "alive"):
-				temp_dk[val['IP']] = "alive"
+				temp_dk[val['IP']+":"+str(val['PROCESS_ID'])] = "alive"
 			elif (val['TOPIC'] == "success"):
 				my_mutex_stream.acquire()
 				available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 

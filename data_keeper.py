@@ -20,20 +20,30 @@ def main(process_id,heart_beating_process):
         process = message['PROCESS_TYPE']
 
         if process == "download":
+
+            print("Download Request...")
+
             #Message verification
             if ("FILE_NAME") not in message:
                 raise NameError("File name is missed!")
             
+            print("["+message['USER_ID']+"] requested to download: " + message['FILE_NAME'])
+            print("Preparing file to stream...")
             message['FILE_NAME'] = data_path+'/'+message['FILE_NAME']
             sent_message = sendFile(message['FILE_NAME'])
             
             stream_socket.send_pyobj(sent_message)
-            
+
+            print("File streamed successfully!")
+
             #send success message to master:
             success_download(publisher_socket,process)
-
+            
 
         elif process == "upload":
+
+            print("Upload request...")
+
             #Message verification
             if ("FILE_NAME") not in message:
                 raise NameError("File name is missed!")
@@ -55,11 +65,17 @@ def main(process_id,heart_beating_process):
                 if ("#"+str(index)) not in message:
                     raise NameError("frame #"+str(index)+" is missed!")
             
+
+            print("["+message['USER_ID']+"] requested to upload: " + message['FILE_NAME'])
+            print("File is being saved...")
             message['FILE_NAME'] = data_path+'/'+message['FILE_NAME']
             saveFile(message)
 
+            print("File saved successfully!")
+
             #send success message to master:
             success_upload(publisher_socket,process,message['USER_ID'],message['FILE_NAME'].split("/")[-1])
+            
 
         else:
             raise NameError("Error in streaming!")
@@ -71,6 +87,9 @@ def main(process_id,heart_beating_process):
     def processReplicate(message, stream_socket, context, publisher_socket):
         
         if message['NODE_TYPE'] == "source":
+
+            print("Replica Request. I'm source...")
+
             #Message verification
             if ("FILE_NAME") not in message:
                 raise NameError("File name is missed!")
@@ -87,6 +106,9 @@ def main(process_id,heart_beating_process):
             destination_socket = context.socket(zmq.PAIR)
             destination_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
+            print("Replica: source sending: " + message['FILE_NAME'])
+            print("Preparing file to stream...")
+
             sent_message = sendFile(message['FILE_NAME'])
 
             sent_message.update({'USER_ID' : message['USER_ID']})
@@ -94,17 +116,26 @@ def main(process_id,heart_beating_process):
             destination_socket.send_pyobj(sent_message)
             destination_socket.close()
             
+            print("File streamed successfully!")
+
             #send success to master:
             success_download(publisher_socket,message['NODE_TYPE'])
 
 
+
         elif message['NODE_TYPE'] == "destination":
 
+            print("Replica Request. I'm destination...")
+
             received_file = stream_socket.recv_pyobj()
+            
+            print("Replica: destination receiving: " + received_file['FILE_NAME'])
+            print("File is being saved...")
             saveFile(received_file)
 
+            print("File saved successfully!")
             #send success to master:
-            success_upload (publisher_socket,message['NODE_TYPE'],message['USER_ID'],message['FILE_NAME'])
+            success_upload (publisher_socket,message['NODE_TYPE'],received_file['USER_ID'],received_file['FILE_NAME'])
 
         else:
             raise NameError("Error in Node Type")
@@ -114,7 +145,8 @@ def main(process_id,heart_beating_process):
     def heart_beat (socket):
         data = {
             'TOPIC' : topic_alive,
-            'IP' : my_ip
+            'IP' : my_ip,
+            'PROCESS_ID' : process_id
         }
         socket.send_pyobj(data)
 
@@ -133,7 +165,7 @@ def main(process_id,heart_beating_process):
             'TYPE' : notification
         }
         socket.send_pyobj(data)
-        print("Downloading done\n")
+        print("Downloading done!\n")
 
     #send success message after client upload/destination replicate data successfully::
     def success_upload (socket,notification,user,file_name):
@@ -146,20 +178,18 @@ def main(process_id,heart_beating_process):
             'FILE_NAME' : file_name
         }
         socket.send_pyobj(data)
-        print("Uploading done\n")
+        print("Uploading done!\n")
 
     ########################################=>MAIN<=########################################
+
+
     #####SIGNAL####
     signal.signal(signal.SIGALRM, alarm_handler)
-    signal.alarm(1)
-    #ATRRIB: IP STREAM_PORT PUBLISHER_REPORT HEART_BEATING_PROCESS
+    
     #stream_port (streaming / notifications)
     stream_port = process_id
-    # stream_port = "5556"
     #publisher_port (heart beating / success messages)
     publish_port = stream_port + 1
-    #the process will send alive message or not
-    # heart_beating_process = sys.argv[3]
 
     #topics:
     #alive topic : 
@@ -181,30 +211,43 @@ def main(process_id,heart_beating_process):
 
     #####SIGNAL####
     #heart beating:
-    # if heart_beating_process == True :
-    #     signal.alarm(1)
+    if heart_beating_process == True :
+        signal.alarm(1)
 
     while True:
         message = stream_socket.recv_pyobj()
         if ("PROCESS_TYPE") in message:
             processStream(message,stream_socket,publish_socket)
+            print("Press any key to teriminate the data keeper!\n")
         elif ("NODE_TYPE") in message:
             processReplicate(message, stream_socket, context, publish_socket)
+            print("Press any key to teriminate the data keeper!\n")
         else:
             raise NameError("Process type is missed!\n")
 
 ########################=>MAIN_PROCESS<=########################
 
+'''
+Attributes:
+    MY_STARTING_PORT
+    PROCESSES_NUM
+    DATA_PATH
+'''
+
 my_ip = "127.0.0.1"
-data_path = "DATA"
+data_path = sys.argv[3]
 
 if __name__ == "__main__":
     current_port = int(sys.argv[1])
     processes_num = int(sys.argv[2])
 
+    print("Initiating a Datakeepr...")
+
     if os.path.isdir(data_path) == False:
         os.mkdir(data_path)
     
+    print("Data Folder... Done!")
+
     processes_list = list()
     for i in range(0,processes_num):
         processes_list.append(multiprocessing.Process(

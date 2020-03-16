@@ -26,16 +26,13 @@ def establishConnections(IP, start_port, process_count):
     return context, socket_list, master_ports_list
 
 
-#user_id
-
-# user_id = sys.argv[1]
-
 '''
-From File:
+Attributes:
     MASTER_IP
     MASTER_START_PORT
     MASTER_PROCESSES_COUNT
     DOWNLOAD_DIR
+    USER_ID
 '''
 master_IP=sys.argv[1]
 master_start_port=int(sys.argv[2])
@@ -54,9 +51,6 @@ context, master_socket_list, master_ports_list = establishConnections(
 
 
 context = zmq.Context()
-# DK_IP_port = "127.0.0.1:5556"
-# DK_PORT=sys.argv[1]
-# DK_IP_port = "127.0.0.1:"+DK_PORT
 
 while True:
     print("Enter Process type: ", end='')
