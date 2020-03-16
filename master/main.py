@@ -47,7 +47,7 @@ if __name__ == "__main__":
 			port = port + 1
 
 		# 1) check the replicas for all files
-		p.append(multiprocessing.Process(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex_stream, )))
+		p.append(multiprocessing.Process(target=replica, args=(replica_factor,replica_period,alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex_stream,my_mutex_lookup, )))
 		p[n].start()
 		# 2) recieve the heart beat
 		p.append(multiprocessing.Process(target=alive, args=(ip1,2*port+1,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive,)))

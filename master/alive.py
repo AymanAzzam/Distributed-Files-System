@@ -47,19 +47,14 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 
 				elif (val['TYPE'] == "upload"):
 					my_mutex_lookup.acquire()
-					if(val['FILE_NAME'] in lookup_table):
-						lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table)) 
-						# lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
-						lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
-					else:
-						ob = value(val['USER_ID'], [val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table)], [val['FILE_NAME']])
-						lookup_table[val['FILE_NAME']] = ob 
+					ob = value(val['USER_ID'], [val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table)], [val['FILE_NAME']])
+					lookup_table[val['FILE_NAME']] = ob
 					my_mutex_lookup.release()
 					print("Uploading done\n")
 					#TODO:
-					#You have to deal with the replica here
-				printAvailableStream(my_id,available_stream_table)
-				printLookup(my_id,lookup_table)
+					#You have to deal with the replica 
+				# printAvailableStream(my_id,available_stream_table)
+				# printLookup(my_id,lookup_table)
 			else:
 				print("Alive process got unexcpected topic\n")
 

@@ -52,11 +52,17 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	my_mutex.release()
 	return src_index, dst_index
 
-def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id):
+def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex_stream):
 	src_ip =  ports_list[src_index].split(":")[0];	src_port_stream = ports_list[src_index].split(":")[1]
 	dst_ip =  ports_list[dst_index].split(":")[0];	dst_port_stream = ports_list[dst_index].split(":")[1]
 	src_port_notification = src_port_stream;	dst_port_notification = dst_port_stream
 
+	notification_sub_socket = context.socket(zmq.SUB)
+
+	notification_sub_socket.connect("tcp://%s:%s"%(dst_ip,str(int(dst_port_notification)+1)))
+	notification_sub_socket.connect("tcp://%s:%s"%(src_ip,str(int(src_port_notification)+1)))
+
+	notification_sub_socket.subscribe("")
 	
 	socket1 = context.socket(zmq.PAIR)
 	socket2 = context.socket(zmq.PAIR)
@@ -71,7 +77,38 @@ def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id):
 	print("Master sent messgae to replica source\n")
 	socket2.close()
 
-def replica(replica_factor, replica_period, alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex):
+	
+	
+	success_count = 0
+
+	while success_count<2:
+		
+		val = notification_sub_socket.recv_pyobj()
+	
+		if (val['TOPIC'] == "success"):
+
+			if(val['TYPE'] == "upload" or val['TYPE'] == "download"):
+				continue
+
+			my_mutex_stream.acquire()
+			available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 
+			my_mutex_stream.release()
+			if (val['TYPE'] == "source"):
+				print("Source done\n")
+
+			elif (val['TYPE'] == "destination"):
+				my_mutex_lookup.acquire()
+				lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table))
+				lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
+				my_mutex_lookup.release()
+				print("Destination done\n")
+			success_count += 1
+	
+	notification_sub_socket.close()
+
+
+
+def replica(replica_factor, replica_period, alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex,my_mutex_lookup):
 	context = zmq.Context()
 	#replica_factor = 3
 
@@ -86,6 +123,6 @@ def replica(replica_factor, replica_period, alive_table,lookup_table,available_s
 			while(len(v.datakeepers_list)< replica_factor):
 				src_index, dst_index = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex)
 				user_id = v.user_id
-				notify_src_dst(context,k,src_index,dst_index,ports_list,user_id)
+				notify_src_dst(context,k,src_index,dst_index,ports_list,user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex)
 				# v.datakeepers_list.append(ports_list[dst_index_start])	# append the starting port for destination datakeeper on that file
 		time.sleep(replica_period)
