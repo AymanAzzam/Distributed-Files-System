@@ -10,7 +10,7 @@ def configure(alive_table,available_stream_table,ports_list):
 	for i in range(0,keepers_num):
 		ip = f.readline().rstrip()			#.rstrip to erase "\n" from the ip end
 		ip_port = int(f.readline())
-		alive_table[ip] = "dead"
+		alive_table[ip:str(ip_port)] = "dead"
 		for j in range(0,processes_num):
 			available_stream_table[ip+":"+str(ip_port+2*j)] = "available"
 			#available_publish_table[ip+":"+str(ip_port+2*j+1)] = "available"

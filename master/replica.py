@@ -1,36 +1,39 @@
 import time
 import zmq
 from utilities import *
+from print_tables import *
 
 def keeper_for_replica(v,ports_list,processes_num):
 	index = 0;	i = 0
+	printPortList(1,ports_list)
+	print(processes_num)
 	while True:
 		i = 0;	flag = True
 		while(i<len(v.datakeepers_list) and flag):
 			#TODO
 			#Check here also if this data keeper is alive
-			if(v.datakeepers_list[i].split(":")[0] == ports_list[index].split(":")[0]):
+			if(v.datakeepers_list[i] == ports_list[index]):
 				flag = False
 			i = i + 1
 		if(flag):
 			break
-		index = index + processes_num
+		index = (index + processes_num)%len(ports_list)
 	return index
 
 def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex):
 	dst_index_start = keeper_for_replica(v,ports_list,processes_num);	dst_index = dst_index_start
 	my_mutex.acquire()
 	print("Master searching about available port for replica destination\n")
-	while(available_stream_table[ports_list[dst_index]] == 'busy' or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):	#Get available destination port for source to connect on it
+	while(available_stream_table[ports_list[dst_index]] == 'busy' or alive_table[ports_list[dst_index_start].split(":")[0]] == "dead"):	#Get available destination port for source to connect on it
 		dst_index = (dst_index + 1) % (dst_index_start + processes_num)
-	print("Master got %s for replica destination\n"%(ports_list[starting_dk_port_index]))	
+	print("Master got %s for replica destination\n"%(ports_list[dst_index]))	
 	available_stream_table[ports_list[dst_index]] = 'busy'
 	
 	print("Master searching about available port for replica source\n")
-	src_index_start = start_index_for_ip(v.datakeepers_list[i].split(":")[0],ports_list);	src_index = src_index_start
-	while(available_stream_table[ports_list[src_index]] == 'busy' or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):	#Get available source port for master to connect on it
+	src_index_start = start_index_for_ip(v.datakeepers_list[0],processes_num,ports_list);	src_index = src_index_start
+	while(available_stream_table[ports_list[src_index]] == 'busy' or alive_table[ports_list[src_index_start].split(":")[0]] == "dead"):	#Get available source port for master to connect on it
 		src_index = (src_index + 1) % (src_index_start + processes_num)
-	print("Master got %s for replica source\n"%(ports_list[starting_dk_port_index]))	
+	print("Master got %s for replica source\n"%(ports_list[src_index]))	
 	available_stream_table[ports_list[src_index]] = 'busy'
 	my_mutex.release()
 	return src_index, dst_index,dst_index_start
