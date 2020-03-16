@@ -2,6 +2,7 @@ from multiprocessing import Lock
 import zmq
 import random
 from print_tables import *
+from utilities import *
 
 def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1,port1,keepers_num,processes_num,my_mutex):
 	my_id = random.randrange(10000)

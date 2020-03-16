@@ -1,5 +1,6 @@
 import time
 import zmq
+from utilities import *
 
 def keeper_for_replica(v,ports_list,processes_num):
 	index = 0;	i = 0
@@ -12,12 +13,6 @@ def keeper_for_replica(v,ports_list,processes_num):
 		if(flag):
 			break
 		index = index + processes_num
-	return index
-
-def start_index_for_ip(ip,ports_list):
-	index = 0
-	while(ip != ports_list[index].split(":")[0]):
-		index = index + 1
 	return index
 
 def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex):
