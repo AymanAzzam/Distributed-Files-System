@@ -9,7 +9,7 @@ from utilities import *
 from main import value
 
 
-def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive,stop_event):
+def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive):
 	my_id = random.randrange(10000)
 	
 	context = zmq.Context()
@@ -20,7 +20,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 		port = str(int(ent.split(":")[1])+1)
 		socket.connect('tcp://%s:%s'%(ip,port))
 	socket.subscribe("")
-	socket.setsockopt(zmq.RCVTIMEO, 100)
+	socket.setsockopt(zmq.RCVTIMEO, 0)
 
 	temp_dk = dict()
 	
@@ -34,10 +34,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				val = socket.recv_pyobj()
 			except zmq.error.Again as e:
 				#print('Alived rrrrece timed out ')
-				if stop_event.is_set():
-					stop_event.clear()
-					break
-				continue	
+				break	
 			
 			if (val['TOPIC'] == "alive"):
 				temp_dk[val['IP']] = "alive"
@@ -66,27 +63,9 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 			else:
 				print("Alive process got unexcpected topic\n")
 
-			if stop_event.is_set():
-				stop_event.clear()
-				break
-
 		my_mutex_alive.acquire()
 		for k, v in temp_dk.items():
 			alive_table[k] = v
 		my_mutex_alive.release()
 		#printAlive(my_id,alive_table)
-		time.sleep(0.5)
-
-def alive_helper(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive):
-		# Event object used to send signals from one thread to another
-		stop_event = Event()
-
-		alive_thread = multiprocessing.Process(target=alive, args=(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive,stop_event))
-		alive_thread.start()
-		
-		while True:
-			time.sleep(0.25)
-			stop_event.set()
-
-		alive_thread.join()			
-
+		time.sleep(1)		
