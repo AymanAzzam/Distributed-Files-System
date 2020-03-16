@@ -27,10 +27,9 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 			print("Master sent %s for client to upload to"%(ports_list[starting_dk_port_index]))
 			available_stream_table[ports_list[starting_dk_port_index]] = "busy"
 			my_mutex.release()
-			delimeter = ports_list[starting_dk_port_index].find(':')
 			msg={
-				'IP' : ports_list[starting_dk_port_index][0:delimeter],
-				'PORT' : ports_list[starting_dk_port_index][delimeter+1:len(ports_list[starting_dk_port_index])]
+				'IP' : ports_list[starting_dk_port_index].split(":")[0],
+				'PORT' : ports_list[starting_dk_port_index].split(":")[1]
 			}
 			client.send_pyobj(msg)
 
@@ -48,16 +47,17 @@ def master_client(alive_table,available_stream_table,ports_list,lookup_table,ip1
 
 			print("Master searching about available port  to download")
 			ip_index_temp = start_index_for_ip(datakeeper_list[0].split(":")[0],ports_list);	ip_index = ip_index_temp
+			#WARNING
+			#There's a problem in the while loop => list index out of range 
 			while(available_stream_table[ports_list[ip_index]] == "busy" or alive_table[ports_list[starting_dk_port_index].split(":")[0]] == "dead"):
 				ip_index = (ip_index + 1) % (ip_index + processes_num)
 			print("Master sent %s for client to download from"%(ports_list[starting_dk_port_index]))	
 			available_stream_table[ports_list[ip_index]] = "busy"
 			my_mutex.release()
 
-			delimeter = ports_list[ip_index].find(':')
 			msg={
-				'IP' : ports_list[ip_index][0:delimeter],
-				'PORT' : ports_list[ip_index][delimeter+1:len(ports_list[ip_index])]
+				'IP' : ports_list[ip_index].split(":")[0],
+				'PORT' : ports_list[ip_index].split(":")[1]
 			}
 			client.send_pyobj(msg)
 		else:

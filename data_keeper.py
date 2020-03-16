@@ -30,7 +30,7 @@ def main(process_id,heart_beating_process):
             stream_socket.send_pyobj(sent_message)
             
             #send success message to master:
-            # success_download(publisher_socket,process)
+            success_download(publisher_socket,process)
 
 
         elif process == "upload":
@@ -59,7 +59,7 @@ def main(process_id,heart_beating_process):
             saveFile(message)
 
             #send success message to master:
-            # success_upload(publisher_socket,process,message['USER_ID'],message['FILE_NAME'])
+            success_upload(publisher_socket,process,message['USER_ID'],message['FILE_NAME'].split("/")[-1])
 
         else:
             raise NameError("Error in streaming!")
@@ -80,11 +80,16 @@ def main(process_id,heart_beating_process):
 
             if ("PORT") not in message:
                 raise NameError("PORT is missed")
+
+            if ("USER_ID") not in message:
+                raise NameError("User ID is missed")
                 
             destination_socket = context.socket(zmq.PAIR)
             destination_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
             sent_message = sendFile(message['FILE_NAME'])
+
+            sent_message.update({'USER_ID' : message['USER_ID']})
 
             destination_socket.send_pyobj(sent_message)
             destination_socket.close()
@@ -188,12 +193,12 @@ def main(process_id,heart_beating_process):
 
 ########################=>MAIN_PROCESS<=########################
 
-my_ip = sys.argv[1]
-data_path = sys.argv[4]
+my_ip = "127.0.0.1"
+data_path = "DATA"
 
 if __name__ == "__main__":
-    current_port = int(sys.argv[2])
-    processes_num = int(sys.argv[3])
+    current_port = int(sys.argv[1])
+    processes_num = int(sys.argv[2])
 
     if os.path.isdir(data_path) == False:
         os.mkdir(data_path)

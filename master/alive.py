@@ -6,6 +6,7 @@ import time
 import random
 from print_tables import *
 from utilities import *
+from main import value
 
 
 def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive,stop_event):
@@ -13,7 +14,11 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 	
 	context = zmq.Context()
 	socket = context.socket(zmq.SUB)
-	socket.bind('tcp://%s:%s'%(ip,port))
+	# socket.bind('tcp://%s:%s'%(ip,port))
+	for ent in ports_list:
+		ip = ent.split(":")[0]
+		port = str(int(ent.split(":")[1])+1)
+		socket.connect('tcp://%s:%s'%(ip,port))
 	socket.subscribe("")
 	socket.setsockopt(zmq.RCVTIMEO, 100)
 
@@ -36,14 +41,22 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 				temp_dk[val['IP']] = "alive"
 			elif (val['TOPIC'] == "success"):
 				my_mutex_stream.acquire()
-				available_stream_table[val["IP"]+":"+val["PROCESS_ID"]]= "available" 
+				available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 
 				my_mutex_stream.release()
-				if (val['NODE_TYPE'] == "destination"):
+				if (val['TYPE'] == "destination"):
 					my_mutex_lookup.acquire()
-					lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+start_index_for_ip(val['IP'],ports_list)) 
-					lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
+					lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))) 
+					# lookup_table[val['FILE_NAME']].user_id =val['USER_ID']
 					lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
 					my_mutex_lookup.release()
+				elif (val['TYPE'] == "upload"):
+					my_mutex_lookup.acquire()
+					lookup_table.update({val['FILE_NAME'] : value(
+						val['USER_ID'], [val['IP']+":"+str(start_index_for_ip(val['IP'],ports_list))],[val['FILE_NAME']])
+					})
+					my_mutex_lookup.release()
+					#TODO:
+					#You have to deal with the replica here
 			else:
 				print("Alive process got unexcpected topic")
 

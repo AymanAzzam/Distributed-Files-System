@@ -12,5 +12,5 @@ def printAvailableStream(proc_num,available_stream_table):
 def printAlive(proc_num,alive_table):
 	print("i am process number : %i inside print Alive table"  %proc_num)
 	for k, v in alive_table.items():
-		print(k)
-		alive_table[k].valPrint()
+		print(k,v)
+		# alive_table[k].valPrint()

@@ -41,6 +41,8 @@ master_IP=sys.argv[1]
 master_start_port=int(sys.argv[2])
 master_processes_count=int(sys.argv[3])
 download_dir = sys.argv[4]
+user_id = sys.argv[5]
+
 last_requested_server = 0
 
 if os.path.isdir(download_dir) == False:
@@ -97,29 +99,21 @@ while True:
 
         if process == "upload":
             DK_message = sendFile(file_name)
+            file_name=DK_message['FILE_NAME'].split("/")[-1]
     
+        
         DK_message.update({
             "PROCESS_TYPE" : process,
-            "FILE_NAME" : file_name
+            "FILE_NAME" : file_name,
+            "USER_ID" : user_id
             })
-
-        
-        while DK_message['FILE_NAME'].find('/') != -1:
-            index=DK_message['FILE_NAME'].find('/')
-            size = len(DK_message['FILE_NAME'])
-            DK_message['FILE_NAME']=DK_message['FILE_NAME'][index+1:size]
 
         DK_socket.send_pyobj(DK_message)
 
         if process == "download":
             received_message = DK_socket.recv_pyobj()
 
-            while received_message['FILE_NAME'].find('/') != -1:
-                index=received_message['FILE_NAME'].find('/')
-                size = len(received_message['FILE_NAME'])
-                received_message['FILE_NAME']=received_message['FILE_NAME'][index+1:size]
-            
-            received_message['FILE_NAME'] = download_dir + '/' + received_message['FILE_NAME']
+            received_message['FILE_NAME'] = download_dir + '/' + received_message['FILE_NAME'].split("/")[-1]
             saveFile(received_message)
 
             print("Downloading Done!")
@@ -129,7 +123,7 @@ while True:
         
         DK_socket.close()
 
-        print("Want new process?[Y/N]",end='')
+        print("Want new process?[Y/n]",end='')
         choice = input()
         if choice =='n' or choice =='N':
             break    

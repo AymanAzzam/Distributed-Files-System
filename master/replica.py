@@ -7,7 +7,9 @@ def keeper_for_replica(v,ports_list,processes_num):
 	while True:
 		i = 0;	flag = True
 		while(i<len(v.datakeepers_list) and flag):
-			if(v.datakeeper_list[i].split(":")[0] == ports_list[index].split(":")[0]):
+			#TODO
+			#Check here also if this data keeper is alive
+			if(v.datakeeper_lists[i].split(":")[0] == ports_list[index].split(":")[0]):
 				flag = False
 			i = i + 1
 		if(flag):
@@ -33,12 +35,12 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	my_mutex.release()
 	return src_index, dst_index,dst_index_start
 
-def notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list):
+def notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list, user_id):
 	src_ip =  ports_list[src_index].split(":")[0];	src_port_stream = ports_list[src_index].split(":")[1]
 	dst_ip =  ports_list[dst_index].split(":")[0];	dst_port_stream = ports_list[dst_index].split(":")[1]
 	src_port_notification = src_port_stream;	dst_port_notification = dst_port_stream
 
-	message_src = {'NODE_TYPE': "source", 'FILE_NAME': k, 'IP': dst_ip, 'PORT': dst_port_stream}
+	message_src = {'NODE_TYPE': "source", 'FILE_NAME': k, 'IP': dst_ip, 'PORT': dst_port_stream, 'USER_ID' : user_id}
 	message_dst = {'NODE_TYPE': "destination"}
 	socket1.connect("tcp://%s:%s"%(dst_ip,dst_port_notification))
 	socket1.send_pyobj(message_dst)
@@ -56,10 +58,13 @@ def replica(replica_factor, replica_period, alive_table,lookup_table,available_s
 	#replica_factor = 3
 
 	while True:
+		#TODO
+		#You have to convert the below part to a procedure to deal with in (alive.py line:57)
 		for k, v in lookup_table.items():
 			i = 0;	j = 0
 			while(len(v.datakeepers_list)< replica_factor):
-				src_index, dst_index,dst_index_star = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex)
-				notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list)
-				v.datakeepers_list.append(ports_list[dst_index_start])	# append the starting port for destination datakeeper on that file
+				src_index, dst_index,dst_index_start = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex)
+				user_id = v.user_id
+				notify_src_dst(socket1,socket2,k,src_index,dst_index,ports_list,user_id)
+				# v.datakeepers_list.append(ports_list[dst_index_start])	# append the starting port for destination datakeeper on that file
 		time.sleep(replica_period)
