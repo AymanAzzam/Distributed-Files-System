@@ -1,3 +1,15 @@
+class value:
+	#user_id = 5
+	#datakeepers_list = []
+	#paths_list = []
+	def __init__(self, user_id, datakeepers_list, paths_list):
+		self.user_id= user_id
+		self.datakeepers_list= datakeepers_list
+		self.paths_list= paths_list
+
+	def valPrint(self):
+		print(self.user_id, self.datakeepers_list, self.paths_list)
+
 def start_index_for_ip(ip_port,process_num,ports_list):
 	index = 0
 	while(ip_port != ports_list[index]):

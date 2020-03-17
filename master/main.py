@@ -9,6 +9,7 @@ from configure import *
 from print_tables import *
 from replica import *
 from alive import *
+from utilities import *
 
 
 ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
@@ -19,15 +20,6 @@ lookup_table = multiprocessing.Manager().dict()
 alive_table = multiprocessing.Manager().dict()
 available_stream_table = multiprocessing.Manager().dict()
 ports_list = multiprocessing.Manager().list()
-
-class value:
-	def __init__(self, user_id, datakeepers_list, paths_list):
-		self.user_id= user_id
-		self.datakeepers_list= datakeepers_list
-		self.paths_list= paths_list
-
-	def valPrint(self):
-		print(self.user_id, self.datakeepers_list, self.paths_list)
 
 if __name__ == "__main__":
 	with multiprocessing.Manager() as manager:

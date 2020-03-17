@@ -6,7 +6,7 @@ import time
 import random
 from print_tables import *
 from utilities import *
-from main import value
+#from main import value
 
 
 def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,ports_list,my_mutex_stream,my_mutex_lookup,my_mutex_alive):
@@ -24,10 +24,11 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 
 	temp_dk = dict()
 	
-	for k, v in alive_table.items():
-		temp_dk[k] = "dead"
 
 	while True:
+
+		for k, v in alive_table.items():
+			temp_dk[k] = "dead"
 
 		while True: 
 			try:
@@ -38,7 +39,7 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 			
 			if (val['TOPIC'] == "alive"):
 				temp_dk[val['IP']+":"+str(val['PROCESS_ID'])] = "alive"
-			elif (val['TOPIC'] == "success"):
+			elif (val['TOPIC'] == "success" and (val['TYPE'] == "upload" or val['TYPE'] == "download")):
 				my_mutex_stream.acquire()
 				available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 
 				my_mutex_stream.release()
@@ -55,8 +56,6 @@ def alive(ip,port,alive_period, alive_table,lookup_table,available_stream_table,
 					#You have to deal with the replica 
 				# printAvailableStream(my_id,available_stream_table)
 				# printLookup(my_id,lookup_table)
-			else:
-				print("Alive process got unexcpected topic\n")
 
 		my_mutex_alive.acquire()
 		for k, v in temp_dk.items():

@@ -3,16 +3,19 @@ import zmq
 from utilities import *
 from print_tables import *
 
-def keeper_for_replica(v,ports_list,processes_num):
+def keeper_for_replica(v,alive_table,ports_list,processes_num):
 	index = 0;	i = 0
-	printPortList(1,ports_list)
-	print(processes_num)
+	#printPortList(1,ports_list)
+	#print(processes_num)
 	while True:
 		i = 0;	flag = True
+		
+		ip = ports_list[index].split(":")[0]
+		base_port = datakeeperFirstPort(ip,ports_list[index].split(":")[1],alive_table)
+
 		while(i<len(v.datakeepers_list) and flag):
-			#TODO
-			#Check here also if this data keeper is alive
-			if(v.datakeepers_list[i] == ports_list[index]):
+			
+			if(v.datakeepers_list[i] == ports_list[index] or alive_table[ip+":"+base_port] == "dead"):
 				flag = False
 			i = i + 1
 		if(flag):
@@ -21,7 +24,7 @@ def keeper_for_replica(v,ports_list,processes_num):
 	return index
 
 def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex):
-	dst_index_start = keeper_for_replica(v,ports_list,processes_num)
+	dst_index_start = keeper_for_replica(v,alive_table,ports_list,processes_num)
 	my_mutex.acquire()
 	print("Master searching about available port for replica destination\n")
 
@@ -30,9 +33,10 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	dst_index = dst_index_start
 
 	ip = ports_list[dst_index].split(":")[0]
-	base_port = datakeeperFirstPort(ip,ports_list[dst_index].split(":")[1],alive_table)
+	base_port = ports_list[dst_index].split(":")[1]
+	print("keeper for replica destination "+ip+":"+base_port)
 
-	while(available_stream_table[ports_list[dst_index]] == 'busy' or alive_table[ip+":"+base_port] == "dead"):	#Get available destination port for source to connect on it
+	while(available_stream_table[ports_list[dst_index]] == 'busy'):	#Get available destination port for source to connect on it
 		offset = (offset + 1) % (processes_num)
 		dst_index = offset + dst_index_start
 
@@ -83,13 +87,10 @@ def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id,lookup_tabl
 
 	while success_count<2:
 		
+		#print("replica is waiting to receive")
 		val = notification_sub_socket.recv_pyobj()
 	
-		if (val['TOPIC'] == "success"):
-
-			if(val['TYPE'] == "upload" or val['TYPE'] == "download"):
-				continue
-
+		if (val['TOPIC'] == "success" and (val['TYPE'] == "source" or val['TYPE'] == "destination")):
 			my_mutex_stream.acquire()
 			available_stream_table[val["IP"]+":"+str(val["PROCESS_ID"])]= "available" 
 			my_mutex_stream.release()
@@ -98,12 +99,14 @@ def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id,lookup_tabl
 
 			elif (val['TYPE'] == "destination"):
 				my_mutex_lookup.acquire()
-				lookup_table[val['FILE_NAME']].datakeepers_list.append(val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table))
-				lookup_table[val['FILE_NAME']].paths_list.append(val['FILE_NAME'])
+				ob = lookup_table[val['FILE_NAME']]
+				ob.datakeepers_list.append(val['IP']+":"+datakeeperFirstPort(val['IP'],val['PROCESS_ID'],alive_table))
+				ob.paths_list.append(val['FILE_NAME'])
+				lookup_table[val['FILE_NAME']] = ob
 				my_mutex_lookup.release()
 				print("Destination done\n")
-			success_count += 1
-	
+			success_count = success_count + 1
+			
 	notification_sub_socket.close()
 
 
@@ -116,13 +119,27 @@ def replica(replica_factor, replica_period, alive_table,lookup_table,available_s
 		return
 
 	while True:
-		#TODO
-		#You have to convert the below part to a procedure to deal with in (alive.py line:57)
+		
+		#delete all files from dead datakeepers
+		for k, v in lookup_table.items():
+			d_list = []
+			p_list = []
+			print(v.datakeepers_list)
+			for i in range(len(v.datakeepers_list)):
+				if alive_table[v.datakeepers_list[i]] == "alive":
+					d_list.append(v.datakeepers_list[i])
+					p_list.append(v.paths_list[i])
+			v.datakeepers_list = d_list
+			v.paths_list = p_list
+			print(v.datakeepers_list)
+			lookup_table[k] = v
+
 		for k, v in lookup_table.items():
 			i = 0;	j = 0
 			while(len(v.datakeepers_list)< replica_factor):
 				src_index, dst_index = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex)
 				user_id = v.user_id
 				notify_src_dst(context,k,src_index,dst_index,ports_list,user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex)
-				# v.datakeepers_list.append(ports_list[dst_index_start])	# append the starting port for destination datakeeper on that file
+				v = lookup_table[k]
+				print(v.datakeepers_list)
 		time.sleep(replica_period)

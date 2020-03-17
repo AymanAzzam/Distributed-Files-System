@@ -103,7 +103,7 @@ def main(process_id,heart_beating_process):
             if ("USER_ID") not in message:
                 raise NameError("User ID is missed")
 
-            #time.sleep(2)
+            time.sleep(2)
             destination_socket = context.socket(zmq.PAIR)
             destination_socket.connect("tcp://" + message['IP'] + ":" + message['PORT'])
 
@@ -134,11 +134,12 @@ def main(process_id,heart_beating_process):
             
             print("Replica: destination receiving: " + received_file['FILE_NAME'])
             print("File is being saved...")
+            received_file['FILE_NAME'] = data_path+"/"+received_file['FILE_NAME']
             saveFile(received_file)
 
             print("File saved successfully!")
             #send success to master:
-            success_upload (publisher_socket,message['NODE_TYPE'],received_file['USER_ID'],received_file['FILE_NAME'])
+            success_upload (publisher_socket,message['NODE_TYPE'],received_file['USER_ID'],received_file['FILE_NAME'].split("/")[-1])
 
         else:
             raise NameError("Error in Node Type")
