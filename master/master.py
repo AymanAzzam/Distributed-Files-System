@@ -12,7 +12,7 @@ from alive import *
 from utilities import *
 
 
-ip1 = "127.0.0.1";	port = int(sys.argv[1]);	n = int(sys.argv[2])
+ip1 = sys.argv[1];	port = int(sys.argv[2]);	n = int(sys.argv[3])
 keepers_num = 0;	processes_num = 0
 replica_factor = 3; alive_period = 1
 
