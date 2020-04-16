@@ -23,9 +23,9 @@ def keeper_for_replica(v,alive_table,ports_list,processes_num):
 		index = (index + processes_num)%len(ports_list)
 	return index
 
-def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex):
+def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex_stream):
 	dst_index_start = keeper_for_replica(v,alive_table,ports_list,processes_num)
-	my_mutex.acquire()
+	my_mutex_stream.acquire()
 	print("Master searching about available port for replica destination\n")
 
 
@@ -37,6 +37,7 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	print("keeper for replica destination "+ip+":"+base_port)
 
 	while(available_stream_table[ports_list[dst_index]] == 'busy'):	#Get available destination port for source to connect on it
+		print("##")
 		offset = (offset + 1) % (processes_num)
 		dst_index = offset + dst_index_start
 
@@ -48,12 +49,13 @@ def src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,m
 	offset = 0
 	src_index = src_index_start
 	while(available_stream_table[ports_list[src_index]] == 'busy' or alive_table[ports_list[src_index_start]] == "dead"):	#Get available source port for master to connect on it
+		print("##")
 		offset = (offset + 1) % (processes_num)
 		src_index = offset + src_index_start
 
 	print("Master got %s for replica source\n"%(ports_list[src_index]))	
 	available_stream_table[ports_list[src_index]] = 'busy'
-	my_mutex.release()
+	my_mutex_stream.release()
 	return src_index, dst_index
 
 def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex_stream):
@@ -111,7 +113,7 @@ def notify_src_dst(context,k,src_index,dst_index,ports_list, user_id,lookup_tabl
 
 
 
-def replica(replica_factor, replica_period, alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex,my_mutex_lookup):
+def replica(replica_factor, replica_period, alive_table,lookup_table,available_stream_table,ports_list,processes_num,my_mutex_stream,my_mutex_lookup):
 	context = zmq.Context()
 	#replica_factor = 3
 
@@ -124,22 +126,29 @@ def replica(replica_factor, replica_period, alive_table,lookup_table,available_s
 		for k, v in lookup_table.items():
 			d_list = []
 			p_list = []
-			print(v.datakeepers_list)
+			# print(v.datakeepers_list)
 			for i in range(len(v.datakeepers_list)):
 				if alive_table[v.datakeepers_list[i]] == "alive":
 					d_list.append(v.datakeepers_list[i])
 					p_list.append(v.paths_list[i])
 			v.datakeepers_list = d_list
 			v.paths_list = p_list
-			print(v.datakeepers_list)
+			# print(v.datakeepers_list)
 			lookup_table[k] = v
 
 		for k, v in lookup_table.items():
-			i = 0;	j = 0
+			i = 0;	j = 0; replicated = False
 			while(len(v.datakeepers_list)< replica_factor):
-				src_index, dst_index = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex)
+				print("======================================================")
+				print(v.paths_list)
+				print("======================================================")
+				src_index, dst_index = src_dst_port(v,alive_table,available_stream_table,ports_list,processes_num,my_mutex_stream)
 				user_id = v.user_id
-				notify_src_dst(context,k,src_index,dst_index,ports_list,user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex)
+				notify_src_dst(context,k,src_index,dst_index,ports_list,user_id,lookup_table,available_stream_table,alive_table,my_mutex_lookup,my_mutex_stream)
 				v = lookup_table[k]
-				print(v.datakeepers_list)
+				replicated = True
+			
+			if replicated==True:
+				print("Replica Done!")
+				# print(v.datakeepers_list)
 		time.sleep(replica_period)
