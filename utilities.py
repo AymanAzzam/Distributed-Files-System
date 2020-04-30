@@ -28,7 +28,10 @@ import cv2
 
 def sendFile(file_name):
     f = open(file_name,"rb")
-    message = {'DATA' : f.read() }
+    message = {
+        'DATA' : f.read(),
+        'FILE_NAME' : file_name
+        }
     f.close()
     return message
 
