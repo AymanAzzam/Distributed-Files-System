@@ -48,23 +48,6 @@ def main(process_id,heart_beating_process):
             #Message verification
             if ("FILE_NAME") not in message:
                 raise NameError("File name is missed!")
-
-            if ("FPS") not in message:
-                raise NameError("FPS is missed!")
-            if ("FOURCC") not in message:
-                raise NameError("FOURCC is missed!")
-            if ("WIDTH") not in message:
-                raise NameError("WIDTH is missed!")
-            if ("HEIGHT") not in message:
-                raise NameError("HEIGHT is missed!")
-            if ("COUNT") not in message:
-                raise NameError("COUNT is missed!")
-
-            count = message['COUNT']
-
-            for index in range(count):
-                if ("#"+str(index)) not in message:
-                    raise NameError("frame #"+str(index)+" is missed!")
             
 
             print("["+message['USER_ID']+"] requested to upload: " + message['FILE_NAME'])
@@ -239,7 +222,7 @@ Attributes:
     DATA_PATH
 '''
 
-my_ip = "127.0.0.1"
+my_ip = sys.argv[4]
 data_path = sys.argv[3]
 
 if __name__ == "__main__":
