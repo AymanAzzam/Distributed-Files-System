@@ -92,7 +92,8 @@ def main(process_id,heart_beating_process):
 
             print("Replica: source sending: " + message['FILE_NAME'])
             print("Preparing file to stream...")
-
+            
+            message['FILE_NAME'] = data_path+'/'+message['FILE_NAME']
             sent_message = sendFile(message['FILE_NAME'])
 
             sent_message.update({'USER_ID' : message['USER_ID']})
