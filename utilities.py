@@ -3,7 +3,7 @@ def sendFile(file_name):
     f = open(file_name,"rb")
     message = {
         'DATA' : f.read(),
-        'FILE_NAME' : file_name
+        'FILE_NAME' : file_name.split('/')[-1]
         }
     f.close()
     return message
