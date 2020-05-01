@@ -19,7 +19,11 @@ Master Shared Memories are:
 Data keeper processes are:
   1. Processes to interact with clients and Master.
   2. Main process to run all processes.
-
+  
+## Prerequisites
+  1. python3.
+  2. python3 zmq.
+  
 ## Run Master
 We need first to write configuration file `config.txt` . Parameter are replica factor, replice_period, number of data keepers(n) and number of data keeper processes in that order then n pair of lines each two lines contain ip and start_port for the data keeper. Then run master.py and give it master_ip, starting port and number of processes to connect with clients. For example:
 ```sh
