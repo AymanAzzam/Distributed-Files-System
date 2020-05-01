@@ -21,21 +21,21 @@ Data keeper processes are:
   2. Main process to run all processes.
 
 ## Run Master
-We need first to write configuration file `config.txt` . Parameter are replica factor, replice_period, number of data keepers(n) and number of data keeper processes in that order then n pair of lines each two lines contain ip and start_port for the data keeper. Then run master.py and give it its ip, starting port and number of processes to connect with clients. For example:
+We need first to write configuration file `config.txt` . Parameter are replica factor, replice_period, number of data keepers(n) and number of data keeper processes in that order then n pair of lines each two lines contain ip and start_port for the data keeper. Then run master.py and give it master_ip, starting port and number of processes to connect with clients. For example:
 ```sh
-$ python main.py 25.135.153.166 4444 2
+$ python3 main.py 127.0.0.1 4444 1
 ```
 
 ## Run Data Keeper
-Run data-keeper.py and give it its ip, starting port, number of processes to connect with clients/master and folder_name to upload/download files using it. For example:
+Run data-keeper.py and give it data-keeper_ip, starting port, number of processes to connect with clients/master and folder_name to upload/download files using it. For example:
 ```sh
-$ python data_keeper.py 25.1.34.71 5556 3 dk1
+$ python3 data-keeper.py 127.0.0.1 5556 3 dk1
 ```
 
 ## Run Client
-Run client.py and give its master ip, master_start_port number of processes in master to interact with clients, folder_name to upload/download files using it and id for that user. For example:
+Run client.py and give it master_ip, master_start_port number of processes in master to interact with clients, folder_name to upload/download files using it and id for that user. For example:
 ```sh
-$ python client.py 25.135.153.166 4444 2 client_data 6
+$ python3 client.py 127.0.0.1 4444 1 client_data 6
 ```
 
 ## Team members
