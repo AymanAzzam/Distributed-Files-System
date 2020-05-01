@@ -27,7 +27,7 @@ Data keeper processes are:
 ## Run Master
 We need first to write configuration file `config.txt` . Parameter are replica factor, replice_period, number of data keepers(n) and number of data keeper processes in that order then n pair of lines each two lines contain ip and start_port for the data keeper. Then run master.py and give it master_ip, starting port and number of processes to connect with clients. For example:
 ```sh
-$ python3 main.py 127.0.0.1 4444 1
+$ python3 master.py 127.0.0.1 4444 1
 ```
 
 ## Run Data Keeper
