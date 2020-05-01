@@ -222,12 +222,12 @@ Attributes:
     DATA_PATH
 '''
 
-my_ip = sys.argv[4]
-data_path = sys.argv[3]
+my_ip = sys.argv[1]
+data_path = sys.argv[4]
 
 if __name__ == "__main__":
-    current_port = int(sys.argv[1])
-    processes_num = int(sys.argv[2])
+    current_port = int(sys.argv[2])
+    processes_num = int(sys.argv[3])
 
     print("Initiating a Datakeepr...")
 
