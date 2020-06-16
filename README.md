@@ -1,6 +1,14 @@
 # Distributed-File-System
 It's a python project to communicate between several machines using TCP/IP (PyZmq) where We have master, data keepers and clients. Clients can ask master to upload/download videos then master reply with specific IP/port for data keeper to upload/download from then Data keeper notify master that the process succeeded.
 
+## Table of Contents
+- [Master](#master)
+- [Data keeper](#data-keeper)
+- [Run Master](#run-master)
+- [Run Data Keeper](#run-data-keeper)
+- [Run Client](#run-client)
+- [Team members](#team-members)
+
 # Master
 Master processes are:
   1. Processes to interact with clients.
